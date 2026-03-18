@@ -828,7 +828,7 @@ var completedSteps = new Set();
 
 var STEPS = [
   {id:0,label:'口述事件'},{id:1,label:'AI预判'},{id:2,label:'确认问卷'},
-  {id:3,label:'分析报告'},{id:4,label:'最终决策'},{id:5,label:'事后复盘'}
+  {id:3,label:'分析报告'},{id:4,label:'最终决策'}
 ];
 var DIM_DEFS = [
   {key:"time",   label:"时间压力",   multi:false, opts:["今天必须完成","本周内要完成","本月内要完成","没有明确截止"],       hint:"截止时间是什么时候？"},
@@ -923,7 +923,7 @@ function switchView(v) {
   if(v==='decision')renderDecision();
   if(v==='todo')renderTodos();
   if(v==='home'){S.calSelectedDate=null;renderHome();}
-  if(v==='review')renderHistory();
+  if(v==='review')renderReview();
 }
 
 function goHomeWithToast() {
@@ -1034,12 +1034,13 @@ function mkTodoHTML(t){
   var pc=t.pri==='高'?'pri-high':t.pri==='中'?'pri-mid':'pri-low';
   var pl=t.pri==='高'?'紧急':t.pri==='中'?'本周':'计划';
   var flagIcon = (t.pri==='高' && !t.done) ? makeSVGFlagman(22) : '';
-  return '<div class="todo-item">'+
-    '<div class="todo-check'+(t.done?' done':'')+'" onclick="toggleTodo(t.id)"></div>'+
+  var tid = String(t.id);
+  return '<div class="todo-item" data-tid="'+tid+'">'+
+    '<div class="todo-check'+(t.done?' done':'')+'" onclick="toggleTodo(this.closest(\'.todo-item\').getAttribute(\'data-tid\'))"></div>'+
     '<div class="todo-text'+(t.done?' striked':'')+'">'+t.text+'</div>'+
     (t.pri==='高'&&!t.done ? '<span style="flex-shrink:0">'+flagIcon+'</span>' : '')+
     '<div class="todo-pri '+pc+'">'+pl+'</div>'+
-    '<div class="del-btn" onclick="deleteTodo(t.id)">×</div>'+
+    '<div class="del-btn" onclick="deleteTodo(this.closest(\'.todo-item\').getAttribute(\'data-tid\'))">×</div>'+
   '</div>';
 }
 async function addTodo(){
@@ -1056,7 +1057,7 @@ async function toggleTodo(id){
   showSync('☁️ 已同步');renderTodos();
 }
 async function deleteTodo(id){
-  S.todos=S.todos.filter(function(t){return t.id!==id;});
+  S.todos=S.todos.filter(function(t){return String(t.id)!==String(id);});
   await supa.from('todos').delete().eq('id',id);
   showSync('☁️ 已同步');renderTodos();
 }
@@ -1169,7 +1170,7 @@ function collectDims() {
 function renderStepContent(){
   var c=document.getElementById('stepContent');c.innerHTML='';
   if(S.step===0)step0(c);else if(S.step===1)step1(c);else if(S.step===2)step2(c);
-  else if(S.step===3)step3(c);else if(S.step===4)step4(c);else if(S.step===5)step5(c);
+  else if(S.step===3)step3(c);else if(S.step===4)step4(c);
 }
 
 // STEP 0
