@@ -152,6 +152,15 @@ body{background:var(--bg);font-family:var(--font);color:var(--text);min-height:1
 .dim-chip.selected{background:var(--accent-dim);border-color:rgba(91,127,232,0.35);color:var(--accent);font-weight:500;}
 .ai-badge{display:inline-flex;align-items:center;font-size:10px;color:var(--accent);background:var(--accent-dim);padding:2px 7px;border-radius:10px;margin-left:8px;font-weight:400;}
 .report-grid{display:grid;grid-template-columns:180px 1fr;gap:20px;align-items:start;}
+.report-right{max-height:420px;overflow-y:auto;padding-right:4px;}
+.report-right::-webkit-scrollbar{width:3px;}
+.report-right::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px;}
+.step-list{display:flex;flex-direction:column;gap:5px;}
+.step-list-item{display:flex;gap:8px;font-size:13px;line-height:1.6;color:var(--text2);}
+.step-num-badge{width:18px;height:18px;border-radius:50%;background:var(--accent-dim);border:1px solid rgba(91,127,232,0.3);color:var(--accent);font-size:10px;font-family:var(--mono);display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;}
+.resource-item{display:flex;gap:8px;font-size:13px;line-height:1.6;color:var(--text2);margin-bottom:4px;}
+.resource-bullet{color:var(--success);flex-shrink:0;font-weight:700;}
+.perspective-box{background:linear-gradient(135deg,rgba(91,127,232,0.05),rgba(61,189,125,0.04));border:1px solid rgba(91,127,232,0.15);border-radius:8px;padding:10px 13px;font-size:13px;color:var(--text2);line-height:1.7;font-style:italic;}
 .radar-card{background:#fff;border:1px solid var(--border);border-radius:10px;padding:14px;text-align:center;}
 .score-big{font-size:40px;font-weight:700;font-family:var(--mono);color:var(--accent);line-height:1;margin-top:8px;}
 .score-label{font-size:10px;color:var(--text3);letter-spacing:1px;text-transform:uppercase;margin-top:3px;margin-bottom:10px;}
@@ -708,37 +717,156 @@ function step3(c){
     '<div class="ai-loading"><div class="dot-pulse"><span></span><span></span><span></span></div><span>正在生成深度分析</span></div>';
 }
 async function aiReport(){
-  var dd=DIM_DEFS.map(function(def){
-    var v=S.dims[def.key];
-    var note = S.dimNotes && S.dimNotes[def.key] ? '（补充：'+S.dimNotes[def.key]+'）' : '';
+  // 1. 维度数据（选项+补充说明）
+  var dd = DIM_DEFS.map(function(def){
+    var v = S.dims[def.key];
+    var note = S.dimNotes && S.dimNotes[def.key] ? '【用户补充：'+S.dimNotes[def.key]+'】' : '';
     return def.label+'：'+(v||'未填')+note;
   }).join('\n');
-  var p='你是决策分析助手。\n事件：'+S.eventText+'\n精力：'+S.energy+'，情绪：'+S.mood+'\n七个维度评估：\n'+dd+
-    '\n返回JSON（不要其他内容）：{"score":0-100,"verdict":"立刻处理或计划处理或暂时搁置","verdict_level":"high或mid或low","summary":"20字内事件本质","reasons":["结合维度的理由1（30字内）","理由2","理由3"],"risks":["风险1（25字内）","风险2"],"timing":"35字内时机建议","approach":"35字内执行建议"}';
-  var t=await callAI(p,600);
-  try{S.reportData=t?JSON.parse(t):fbReport();}catch(e){S.reportData=fbReport();}
+
+  // 2. 历史行为摘要（最近10条）
+  var histSummary = '';
+  if (S.history && S.history.length > 0) {
+    var recent = S.history.slice(0, 10);
+    var actionCount = {立即做:0, 稍后做:0, 仅存档:0};
+    recent.forEach(function(h){ if(actionCount[h.action]!==undefined) actionCount[h.action]++; });
+    histSummary = '\n\n【用户历史行为参考（最近'+recent.length+'次决策）】\n'+
+      '- 立即做：'+actionCount['立即做']+'次，稍后做：'+actionCount['稍后做']+'次，仅存档：'+actionCount['仅存档']+'次\n'+
+      '- 最近事件摘要：'+recent.slice(0,3).map(function(h){return '「'+h.event+'」→'+h.action;}).join('；');
+  }
+
+  var p = '你是一个深度决策分析助手，擅长结合用户的具体情况给出个性化建议。\n\n'+
+    '【事件描述】'+S.eventText+'\n'+
+    '【当前状态】精力：'+S.energy+'，情绪：'+S.mood+'\n\n'+
+    '【七个维度评估】（注意：如果用户有补充说明，请优先以补充说明为准，选项仅供参考）\n'+dd+
+    histSummary+'\n\n'+
+    '【评分权重规则】\n'+
+    '- 时间压力（权重30%）：今天必须完成=满分，本周=70分，本月=40分，无截止=10分\n'+
+    '- 做成收益（权重20%）：选项越多、越重要分越高\n'+
+    '- 不做的后果（权重15%）：严重不可挽回=满分，依次递减\n'+
+    '- 心理负担（权重15%）：很重=满分；如补充说明显示实际负担比选项更重，应上调\n'+
+    '- 涉及他人（权重10%）：今天就要回应=满分\n'+
+    '- 连锁阻塞（权重5%）：卡住多件事=满分\n'+
+    '- 预估耗时：不参与评分，但需在建议中说明时间安排\n\n'+
+    '【特别提示】如果用户的补充说明和所选选项有明显矛盾，请在判断依据中指出并解释你的判断。\n\n'+
+    '请返回JSON（不要有任何其他内容）：\n'+
+    '{\n'+
+    '  "score": 0到100的整数,\n'+
+    '  "verdict": "立刻处理或计划处理或暂时搁置",\n'+
+    '  "verdict_level": "high或mid或low",\n'+
+    '  "summary": "25字内概括事件本质和核心矛盾",\n'+
+    '  "reasons": ["结合具体维度和补充说明的理由1（40字内）","理由2","理由3"],\n'+
+    '  "risks": ["如果不做的具体影响推演1（40字内）","影响2","影响3"],\n'+
+    '  "window": "最佳执行时间窗口及原因（40字内）",\n'+
+    '  "resources": ["所需资源或前置条件1","条件2"],\n'+
+    '  "steps": ["最小可执行步骤1（20字内）","步骤2","步骤3","步骤4"],\n'+
+    '  "impact": "对工作和身心的可能影响（50字内，包含正面和需注意的方面）",\n'+
+    '  "perspective": "参考视角：面对类似情况大多数人会怎么选择及原因（50字内）",\n'+
+    '  "timing": "结合用户精力和情绪的具体时机建议（40字内）",\n'+
+    '  "approach": "个性化执行建议（40字内，结合用户历史行为风格）"\n'+
+    '}';
+
+  console.log('发送分析报告请求，token预估约900...');
+  var t = await callAI(p, 1200);
+  console.log('分析报告返回:', t);
+  try {
+    if (t) {
+      var match = t.match(/\{[\s\S]*\}/);
+      S.reportData = match ? JSON.parse(match[0]) : fbReport();
+    } else {
+      S.reportData = fbReport();
+    }
+  } catch(e) {
+    console.warn('报告解析失败:', e.message);
+    S.reportData = fbReport();
+  }
   goStep(3);
 }
 function fbReport(){
-  var ti=typeof S.dims.time==='number'?S.dims.time:1,sc=Math.max(20,85-ti*15);
-  return{score:sc,verdict:sc>70?'立刻处理':sc>40?'计划处理':'暂时搁置',verdict_level:sc>70?'high':sc>40?'mid':'low',
-    summary:'需综合时间压力和影响范围判断',
-    reasons:['时间压力决定了紧迫程度','后果严重性影响处理优先级','涉及他人的事项需更快响应'],
-    risks:['拖延可能导致窗口期错失','可能影响他人对你的评价'],
-    timing:'建议在精力较好时段集中处理',approach:'先明确最小可行目标，逐步推进'};
+  // 按权重计算备用分数：时间30%、收益20%、后果15%、负担15%、他人10%、阻塞5%
+  var scoreMap = {
+    time:   {opts:['今天必须完成','本周内要完成','本月内要完成','没有明确截止'], scores:[100,70,40,10], weight:0.30},
+    impact: {opts:['严重且不可挽回','较大但还能补救','一般有点影响','几乎没有后果'], scores:[100,70,40,10], weight:0.15},
+    burden: {opts:['很重一直在脑子里转','有点压着但还好','没什么感觉'], scores:[100,60,10], weight:0.15},
+    other:  {opts:['有人在等我今天就要回应','有人在等我但不急','只影响我自己'], scores:[100,50,10], weight:0.10},
+    block:  {opts:['卡住好几件事必须先解决','影响一件事的推进','完全独立不影响其他'], scores:[100,50,10], weight:0.05}
+  };
+  var total = 0, weightSum = 0;
+  Object.keys(scoreMap).forEach(function(k){
+    var m = scoreMap[k];
+    var v = S.dims[k] || '';
+    var idx = m.opts.indexOf(v);
+    if (idx < 0) idx = 1; // default mid
+    total += m.scores[idx] * m.weight;
+    weightSum += m.weight;
+  });
+  // gain 多选，每个选项+5分
+  var gainVal = S.dims['gain'] || '';
+  var gainBonus = gainVal ? Math.min(20, gainVal.split('、').length * 5) : 5;
+  total += gainBonus * 0.20;
+
+  var sc = Math.round(Math.min(100, total));
+  return {
+    score: sc,
+    verdict: sc>=75?'立刻处理': sc>=45?'计划处理':'暂时搁置',
+    verdict_level: sc>=75?'high': sc>=45?'mid':'low',
+    summary: '综合时间压力与个人状态的初步判断',
+    reasons: ['时间压力是决定紧迫程度的首要因素','心理负担直接影响当前处理意愿','做成收益决定这件事是否值得投入'],
+    risks: ['拖延可能导致窗口期错失','持续占用心理空间影响其他事项效率','可能影响相关人员对你的信任'],
+    window: '建议在精力充沛的上午时段处理',
+    resources: ['需要明确完成所需的具体条件','确认是否有外部依赖需要提前协调'],
+    steps: ['明确最终目标和验收标准','拆解成30分钟内可完成的最小任务','先完成最难或最关键的部分','收尾和复盘'],
+    impact: '完成后可释放心理空间，提升整体工作效率；需注意避免因赶时间导致质量下降',
+    perspective: '大多数人在时间压力较高时会优先处理，以避免后续压力叠加',
+    timing: '结合当前精力状态，选择干扰最少的时间段专注处理',
+    approach: '先用5分钟明确目标，再设定专注时间块逐步推进'
+  };
 }
 function renderReport(c,r){
-  var vl=r.verdict_level||'mid',vl2={high:'⚡ 立刻处理',mid:'📋 计划处理',low:'💤 暂时搁置'};
-  c.innerHTML='<div class="step-heading">分析报告<span class="ai-badge">混元 lite</span></div>'+
-    '<div class="report-grid"><div>'+
-      '<div class="radar-card">'+makeRadar()+'<div class="score-big">'+r.score+'</div><div class="score-label">综合优先级</div><div class="verdict-badge '+vl+'">'+(vl2[vl]||r.verdict)+'</div></div>'+
-    '</div><div class="report-sections">'+
-      '<div class="report-section"><div class="report-section-title">事件本质</div><div class="report-section-body">'+r.summary+'</div></div>'+
-      '<div class="report-section"><div class="report-section-title">判断依据</div><div class="report-section-body">'+r.reasons.map(function(x){return '<div class="reason-item"><span class="reason-bullet">·</span><span>'+x+'</span></div>';}).join('')+'</div></div>'+
-      '<div class="report-section"><div class="report-section-title">不处理的风险</div><div class="report-section-body">'+r.risks.map(function(x){return '<div class="risk-item"><span class="risk-bullet">⚠</span><span>'+x+'</span></div>';}).join('')+'</div></div>'+
-      '<div class="report-section"><div class="report-section-title">时机建议</div><div class="report-section-body">'+r.timing+'</div></div>'+
-      '<div class="report-section"><div class="report-section-title">执行建议</div><div class="report-section-body">'+r.approach+'</div></div>'+
-    '</div></div>'+
+  var vl=r.verdict_level||'mid';
+  var vl2={high:'⚡ 立刻处理',mid:'📋 计划处理',low:'💤 暂时搁置'};
+
+  var reasonsHTML = (r.reasons||[]).map(function(x){
+    return '<div class="reason-item"><span class="reason-bullet">·</span><span>'+x+'</span></div>';
+  }).join('');
+
+  var risksHTML = (r.risks||[]).map(function(x){
+    return '<div class="risk-item"><span class="risk-bullet">⚠</span><span>'+x+'</span></div>';
+  }).join('');
+
+  var resourcesHTML = (r.resources||[]).map(function(x){
+    return '<div class="resource-item"><span class="resource-bullet">✓</span><span>'+x+'</span></div>';
+  }).join('');
+
+  var stepsHTML = (r.steps||[]).map(function(x,i){
+    return '<div class="step-list-item"><div class="step-num-badge">'+(i+1)+'</div><span>'+x+'</span></div>';
+  }).join('');
+
+  c.innerHTML=
+    '<div class="step-heading">分析报告<span class="ai-badge">混元 lite</span></div>'+
+    '<div class="report-grid">'+
+      '<div>'+
+        '<div class="radar-card">'+makeRadar()+
+          '<div class="score-big">'+r.score+'</div>'+
+          '<div class="score-label">综合优先级</div>'+
+          '<div class="verdict-badge '+vl+'">'+(vl2[vl]||r.verdict)+'</div>'+
+        '</div>'+
+      '</div>'+
+      '<div class="report-right">'+
+        '<div class="report-sections">'+
+          '<div class="report-section"><div class="report-section-title">事件本质</div><div class="report-section-body">'+r.summary+'</div></div>'+
+          '<div class="report-section"><div class="report-section-title">判断依据</div><div class="report-section-body">'+reasonsHTML+'</div></div>'+
+          '<div class="report-section"><div class="report-section-title">不做的影响推演</div><div class="report-section-body">'+risksHTML+'</div></div>'+
+          '<div class="report-section"><div class="report-section-title">最佳执行时间窗口</div><div class="report-section-body">'+r.window+'</div></div>'+
+          '<div class="report-section"><div class="report-section-title">所需资源与前置条件</div><div class="report-section-body">'+resourcesHTML+'</div></div>'+
+          '<div class="report-section"><div class="report-section-title">最小可执行步骤</div><div class="report-section-body"><div class="step-list">'+stepsHTML+'</div></div></div>'+
+          '<div class="report-section"><div class="report-section-title">对工作和身心的影响</div><div class="report-section-body">'+r.impact+'</div></div>'+
+          '<div class="report-section"><div class="report-section-title">时机建议</div><div class="report-section-body">'+r.timing+'</div></div>'+
+          '<div class="report-section"><div class="report-section-title">个性化执行建议</div><div class="report-section-body">'+r.approach+'</div></div>'+
+          '<div class="report-section"><div class="report-section-title">参考视角</div><div class="report-section-body"><div class="perspective-box">'+r.perspective+'</div></div></div>'+
+        '</div>'+
+      '</div>'+
+    '</div>'+
     '<div class="next-btn-row"><button class="next-btn" onclick="goStep(4)">做出决策 →</button></div>';
 }
 function makeRadar(){
