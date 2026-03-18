@@ -214,6 +214,33 @@ body{background:var(--bg);font-family:var(--font);color:var(--text);min-height:1
 .history-event{font-size:13px;font-weight:500;color:var(--text);}
 .history-meta{display:flex;gap:10px;font-size:11px;color:var(--text3);}
 .history-score{font-size:10px;font-family:var(--mono);padding:2px 8px;border-radius:4px;background:var(--accent-dim);color:var(--accent);}
+.history-item{cursor:pointer;transition:border-color .15s;}
+.history-item:hover{border-color:var(--accent2);}
+.history-check{width:16px;height:16px;border-radius:4px;border:1.5px solid var(--border2);flex-shrink:0;cursor:pointer;transition:all .15s;display:flex;align-items:center;justify-content:center;}
+.history-check.checked{background:var(--accent);border-color:var(--accent);}
+.history-check.checked::after{content:'✓';font-size:10px;color:#fff;}
+.history-toolbar{display:none;align-items:center;gap:10px;padding:10px 14px;background:var(--accent-dim);border:1px solid rgba(91,127,232,0.25);border-radius:9px;margin-bottom:12px;}
+.history-toolbar.visible{display:flex;}
+.history-selected-count{font-size:13px;color:var(--accent);flex:1;}
+.history-delete-btn{padding:6px 14px;background:var(--danger);border:none;border-radius:7px;color:#fff;font-family:var(--font);font-size:12px;cursor:pointer;font-weight:500;}
+.history-delete-btn:hover{opacity:.85;}
+.modal-overlay{position:fixed;inset:0;background:rgba(45,51,84,0.5);z-index:200;display:none;align-items:center;justify-content:center;}
+.modal-overlay.visible{display:flex;}
+.modal-box{background:#fff;border-radius:14px;width:680px;max-height:80vh;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 8px 40px rgba(45,51,84,0.2);}
+.modal-header{display:flex;align-items:center;padding:16px 20px;border-bottom:1px solid var(--border);flex-shrink:0;}
+.modal-title{font-size:15px;font-weight:600;flex:1;color:var(--text);}
+.modal-meta{font-size:12px;color:var(--text3);margin-left:10px;}
+.modal-close{width:28px;height:28px;border-radius:7px;background:var(--bg3);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:16px;color:var(--text2);}
+.modal-close:hover{background:var(--bg4);}
+.modal-body{overflow-y:auto;padding:20px;display:grid;grid-template-columns:160px 1fr;gap:16px;}
+.modal-body::-webkit-scrollbar{width:4px;}
+.modal-body::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px;}
+.modal-left{display:flex;flex-direction:column;align-items:center;gap:8px;}
+.modal-right{display:flex;flex-direction:column;gap:10px;}
+.modal-action-badge{display:inline-flex;align-items:center;gap:5px;padding:5px 12px;border-radius:7px;font-size:12px;font-weight:500;}
+.modal-action-badge.now{background:rgba(224,85,85,0.1);color:var(--danger);border:1px solid rgba(224,85,85,0.2);}
+.modal-action-badge.later{background:rgba(240,160,48,0.1);color:var(--warn);border:1px solid rgba(240,160,48,0.2);}
+.modal-action-badge.archive{background:var(--bg3);color:var(--text2);border:1px solid var(--border);}
 .sync-indicator{position:fixed;bottom:20px;right:20px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:8px 14px;font-size:12px;color:var(--text2);display:none;box-shadow:0 2px 8px rgba(0,0,0,0.08);}
 .sync-indicator.visible{display:block;}
 </style>
@@ -315,8 +342,8 @@ body{background:var(--bg);font-family:var(--font);color:var(--text);min-height:1
   </div>
 
   <div class="view" id="todoView">
-    <div class="view-title">今日待办</div>
-    <div class="view-sub">管理今天要处理的事情</div>
+    <div class="view-title" id="todoViewTitle">今日待办</div>
+    <div class="view-sub" id="todoViewSub">管理今天要处理的事情</div>
     <div class="todo-add-row">
       <input class="todo-add-input" id="todoInput" placeholder="添加一件事…" onkeydown="if(event.key==='Enter')addTodo()"/>
       <button class="todo-add-btn" onclick="addTodo()">+ 添加</button>
@@ -355,6 +382,18 @@ body{background:var(--bg);font-family:var(--font);color:var(--text);min-height:1
 
 <div class="sync-indicator" id="syncIndicator">☁️ 同步中…</div>
 
+<!-- HISTORY DETAIL MODAL -->
+<div class="modal-overlay" id="historyModal" onclick="closeModal(event)">
+  <div class="modal-box">
+    <div class="modal-header">
+      <div class="modal-title" id="modalTitle">决策详情</div>
+      <div class="modal-meta" id="modalMeta"></div>
+      <button class="modal-close" onclick="closeHistoryModal()">×</button>
+    </div>
+    <div class="modal-body" id="modalBody"></div>
+  </div>
+</div>
+
 <script>
 // ── SUPABASE ──
 const SUPA_URL = 'https://izqdqyivolngcedwnysz.supabase.co';
@@ -364,7 +403,7 @@ const supa = supabase.createClient(SUPA_URL, SUPA_KEY);
 // ── STATE ──
 var S = {
   user: null, // { id, username }
-  view: 'home', sidebarOpen: false, step: 0, calOffset: 0,
+  view: 'home', sidebarOpen: false, step: 0, calOffset: 0, calSelectedDate: null,
   eventText: '', energy: '普通', mood: '平稳',
   dims: {}, aiDims: {}, dimNotes: {}, reportData: null,
   actionChoice: '', actionTime: '',
@@ -467,7 +506,7 @@ function switchView(v) {
   if(v==='cal')renderCal();
   if(v==='decision')renderDecision();
   if(v==='todo')renderTodos();
-  if(v==='home')renderHome();
+  if(v==='home'){S.calSelectedDate=null;renderHome();}
   if(v==='history')renderHistory();
 }
 
@@ -493,6 +532,61 @@ function renderHome() {
 function renderTodos() {
   var list=document.getElementById('todoList'),dl=document.getElementById('doneTodoList'),lb=document.getElementById('doneSectionLabel');
   if(!list)return;
+
+  // Update title based on selected date
+  var titleEl = document.getElementById('todoViewTitle');
+  var subEl = document.getElementById('todoViewSub');
+  var today = new Date();
+  var dateLabel = '今日';
+  if(S.calSelectedDate) {
+    var cd = S.calSelectedDate;
+    var isToday = cd.toDateString() === today.toDateString();
+    if(isToday) {
+      dateLabel = '今日';
+      if(subEl) subEl.textContent = '管理今天要处理的事情';
+    } else {
+      var m = cd.getMonth()+1, day = cd.getDate();
+      dateLabel = m+'月'+day+'日';
+      if(subEl) subEl.textContent = '从日历跳转 · '+cd.getFullYear()+'年'+m+'月'+day+'日';
+    }
+  } else {
+    if(subEl) subEl.textContent = '管理今天要处理的事情';
+  }
+  if(titleEl) titleEl.textContent = dateLabel + '待办';
+
+  // Show decisions for this date if came from calendar
+  var decSection = document.getElementById('calDayDecisions');
+  if(!decSection){
+    var ds = document.createElement('div'); ds.id='calDayDecisions';
+    list.parentNode.insertBefore(ds, list);
+  }
+  decSection = document.getElementById('calDayDecisions');
+  if(S.calSelectedDate && S.history.length > 0){
+    var cd = S.calSelectedDate;
+    var dayDecisions = S.history.filter(function(h){
+      var hd = new Date(h.date.replace(/\//g,'-'));
+      return hd.toDateString() === cd.toDateString();
+    });
+    if(dayDecisions.length > 0){
+      var ac = {'立即做':'var(--danger)','稍后做':'var(--warn)','仅存档':'var(--text3)'};
+      decSection.innerHTML = '<div class="section-label" style="margin-top:4px">当日决策记录</div>'+
+        dayDecisions.map(function(r){
+          return '<div class="history-item" style="margin-bottom:6px;cursor:pointer" onclick="openHistoryModal(this)" data-hid="'+r.id+'">'+
+            '<div style="display:flex;align-items:center;gap:8px">'+
+              '<span class="history-event" style="flex:1">'+r.event+'</span>'+
+              '<span class="history-score">'+r.score+'分</span>'+
+            '</div>'+
+            '<div class="history-meta"><span style="color:'+(ac[r.action]||'var(--text3)')+'">'+r.action+'</span>'+(r.time?'<span>'+r.time+'</span>':'')+'</div>'+
+          '</div>';
+        }).join('')+
+        '<div class="section-label" style="margin-top:14px">待办事项</div>';
+    } else {
+      decSection.innerHTML = '';
+    }
+  } else {
+    decSection.innerHTML = '';
+  }
+
   var pend=S.todos.filter(function(t){return!t.done;}),done=S.todos.filter(function(t){return t.done;});
   list.innerHTML=pend.length?pend.map(mkTodoHTML).join(''):'<div style="color:var(--text3);font-size:12px;padding:8px 0">暂无待办，点击上方添加</div>';
   lb.style.display=done.length?'block':'none';
@@ -539,7 +633,20 @@ function renderCal(){
     return hd.getFullYear()===d.getFullYear()&&hd.getMonth()===d.getMonth();
   }).map(function(h){return new Date(h.date.replace(/\//g,'-')).getDate();});
   for(var i=0;i<first;i++){var e=document.createElement('div');e.className='cal-day other-month';e.textContent=prev-first+i+1;g.appendChild(e);}
-  for(var i=1;i<=dim;i++){var e=document.createElement('div');e.className='cal-day';if(S.calOffset===0&&i===today.getDate())e.classList.add('today');if(decDays.includes(i))e.classList.add('has-event');e.textContent=i;g.appendChild(e);}
+  for(var i=1;i<=dim;i++){
+    var e=document.createElement('div'); e.className='cal-day';
+    if(S.calOffset===0&&i===today.getDate()) e.classList.add('today');
+    if(decDays.includes(i)) e.classList.add('has-event');
+    e.textContent=i;
+    // Click: jump to todo view filtered by this date
+    (function(day){
+      e.onclick=function(){
+        S.calSelectedDate = new Date(d.getFullYear(), d.getMonth(), day);
+        switchView('todo');
+      };
+    })(i);
+    g.appendChild(e);
+  }
   // show decisions for this month in event list
   var evList=document.getElementById('calEventList');
   var monthDecisions=S.history.filter(function(h){
@@ -651,7 +758,7 @@ function sub0(){
 // STEP 1
 function step1(c){
   c.innerHTML='<div class="step-heading">AI 正在分析<span class="ai-badge">混元 lite</span></div>'+
-    '<div class="step-sub">根据你的描述，正在预判八个维度……</div>'+
+    '<div class="step-sub">根据你的描述，正在预判七个维度……</div>'+
     '<div class="ai-loading"><div class="dot-pulse"><span></span><span></span><span></span></div><span>正在理解事件背景</span></div>';
 }
 async function aiPredict(){
@@ -713,7 +820,7 @@ function sub2(){S.dims=collectDims();goStep(3);aiReport();}
 function step3(c){
   if(S.reportData){renderReport(c,S.reportData);return;}
   c.innerHTML='<div class="step-heading">分析报告<span class="ai-badge">混元 lite</span></div>'+
-    '<div class="step-sub">正在综合判断八个维度……</div>'+
+    '<div class="step-sub">正在综合判断七个维度……</div>'+
     '<div class="ai-loading"><div class="dot-pulse"><span></span><span></span><span></span></div><span>正在生成深度分析</span></div>';
 }
 async function aiReport(){
@@ -735,39 +842,60 @@ async function aiReport(){
       '- 最近事件摘要：'+recent.slice(0,3).map(function(h){return '「'+h.event+'」→'+h.action;}).join('；');
   }
 
-  var p = '你是一个深度决策分析助手，擅长结合用户的具体情况给出个性化建议。\n\n'+
-    '【事件描述】'+S.eventText+'\n'+
-    '【当前状态】精力：'+S.energy+'，情绪：'+S.mood+'\n\n'+
-    '【七个维度评估】（注意：如果用户有补充说明，请优先以补充说明为准，选项仅供参考）\n'+dd+
-    histSummary+'\n\n'+
+  // 3. 找出用户最在意的维度（选了最严重选项或写了补充说明的）
+  var topDims = [];
+  DIM_DEFS.forEach(function(def){
+    var v = S.dims[def.key];
+    var hasNote = S.dimNotes && S.dimNotes[def.key] && S.dimNotes[def.key].trim();
+    var isHighest = false;
+    if (!def.multi && v) {
+      var idx = def.opts.indexOf(v);
+      if (idx === 0) isHighest = true; // 选了第一个选项（最严重）
+    }
+    if (def.multi && v) {
+      var count = v.split('、').length;
+      if (count >= 3) isHighest = true; // 多选了大部分
+    }
+    if (isHighest || hasNote) {
+      topDims.push(def.label + '（用户选择：' + v + (hasNote ? '，补充：' + S.dimNotes[def.key] : '') + '）');
+    }
+  });
+  var topDimsStr = topDims.length > 0 ? '\n\n【用户最在意的维度】\n' + topDims.join('\n') : '';
+
+  var p = '你是一个深度决策分析助手，擅长读懂用户的真实需求和行为倾向，给出真正有价值的个性化洞察。\n\n'+
+    '【事件描述】' + S.eventText + '\n'+
+    '【当前状态】精力：' + S.energy + '，情绪：' + S.mood + '\n\n'+
+    '【七个维度评估】（用户有补充说明的，请优先以补充说明为准）\n' + dd +
+    topDimsStr +
+    histSummary + '\n\n'+
     '【评分权重规则】\n'+
-    '- 时间压力（权重30%）：今天必须完成=满分，本周=70分，本月=40分，无截止=10分\n'+
-    '- 做成收益（权重20%）：选项越多、越重要分越高\n'+
-    '- 不做的后果（权重15%）：严重不可挽回=满分，依次递减\n'+
-    '- 心理负担（权重15%）：很重=满分；如补充说明显示实际负担比选项更重，应上调\n'+
-    '- 涉及他人（权重10%）：今天就要回应=满分\n'+
-    '- 连锁阻塞（权重5%）：卡住多件事=满分\n'+
-    '- 预估耗时：不参与评分，但需在建议中说明时间安排\n\n'+
-    '【特别提示】如果用户的补充说明和所选选项有明显矛盾，请在判断依据中指出并解释你的判断。\n\n'+
-    '请返回JSON（不要有任何其他内容），每个字段请充分展开分析，不要简单重复用户的选项，要给出真正有价值的洞察和建议：\n'+
+    '- 时间压力（权重30%）：今天必须完成=100分，本周=70分，本月=40分，无截止=10分\n'+
+    '- 做成收益（权重20%）：选项越多越重要分越高，体现用户对这件事的价值期待\n'+
+    '- 不做的后果（权重15%）：严重不可挽回=100分，依次递减\n'+
+    '- 心理负担（权重15%）：很重=100分；补充说明显示实际负担更重时应上调\n'+
+    '- 涉及他人（权重10%）：今天就要回应=100分\n'+
+    '- 连锁阻塞（权重5%）：卡住多件事=100分\n'+
+    '- 预估耗时：不参与评分，在时机建议中说明\n\n'+
+    '【分析要求】\n'+
+    '1. 事件本质：先逐一分析用户填写的每个维度说明了什么，再综合推导出这件事的真正本质和核心矛盾，要让用户有「说到点子上了」的感觉\n'+
+    '2. 个性化倾向分析：重点分析用户最在意的维度，解读这反映出用户是什么样的决策风格和价值取向，对这次决策有什么影响\n'+
+    '3. 参考视角：基于你的知识，分析做成类似这件事的人通常会经历什么，有哪些典型的后续发展，给用户提供有参考价值的预期\n'+
+    '4. 所有分析都要有深度，不要简单重复用户的选项，要给出真正的洞察\n\n'+
+    '请返回JSON（不要有任何其他内容）：\n'+
     '{\n'+
     '  "score": 0到100的整数,\n'+
     '  "verdict": "立刻处理或计划处理或暂时搁置",\n'+
     '  "verdict_level": "high或mid或low",\n'+
-    '  "summary": "深度概括这件事的本质和核心矛盾，说清楚关键所在",\n'+
-    '  "reasons": ["深度分析理由1：结合具体维度数据和补充说明，解释评分和建议背后的逻辑推导","理由2：分析用户当前状态对这件事的影响","理由3：结合历史行为模式给出个性化判断"],\n'+
-    '  "risks": ["影响推演1：如果不做这件事，具体会触发什么连锁反应，短期和长期各有什么影响","影响推演2：对人际关系或工作评价的潜在影响","影响推演3：对用户心理状态的持续影响"],\n'+
-    '  "window": "详细分析最佳执行时间窗口：什么时候做最合适，为什么这个时间段，结合用户当前精力和情绪状态具体说明",\n'+
-    '  "resources": ["完成这件事需要的具体资源或前置条件，要具体可操作","条件2","条件3（如有）"],\n'+
-    '  "steps": ["第一步：具体可执行的最小行动单元，说清楚做什么怎么做","第二步","第三步","第四步","第五步（如有）"],\n'+
-    '  "impact": "深度分析完成这件事对工作效率、人际关系、个人成长的正面影响，以及需要注意的身心消耗和潜在风险，要有实质性内容",\n'+
-    '  "perspective": "多角度参考视角：面对类似情况，行动派、谨慎派、平衡派各自会怎么选择，背后的考量逻辑是什么，给用户提供真正有参考价值的视角对比",\n'+
-    '  "timing": "结合用户当前精力和情绪给出具体时机建议，包括今天什么时间段开始、如何规避干扰、如何保持状态",\n'+
-    '  "approach": "结合用户历史行为风格给出真正个性化的执行方案，要实用具体，针对这个用户的特点给出量身定制的建议"\n'+
+    '  "summary": "先逐一说明各维度反映了什么，再综合推导出这件事的本质和核心矛盾，要有深度洞察",\n'+
+    '  "window": "详细说明最佳执行时间窗口，为什么这个时间段最合适，结合用户当前精力和情绪具体分析",\n'+
+    '  "impact": "深度分析做成这件事对工作效率、人际关系、个人成长的影响，以及需要注意的潜在风险和身心消耗",\n'+
+    '  "perspective": "基于知识库分析：做成类似这件事的人通常会经历什么过程，有哪些典型的后续发展和影响，给用户提供真实参考预期",\n'+
+    '  "timing": "结合用户精力和情绪给出具体时机建议，包括什么时间开始最合适、如何规避干扰、如何保持状态",\n'+
+    '  "approach": "深度解读用户最在意的维度背后的决策倾向，分析用户是什么样的人，这对这次决策意味着什么，给出真正个性化的建议"\n'+
     '}';
 
-  console.log('发送分析报告请求，token预估约900...');
-  var t = await callAI(p, 3000);
+  console.log('发送分析报告请求...');
+  var t = await callAI(p, 5000);
   console.log('分析报告返回:', t);
   try {
     if (t) {
@@ -825,23 +953,6 @@ function fbReport(){
 function renderReport(c,r){
   var vl=r.verdict_level||'mid';
   var vl2={high:'⚡ 立刻处理',mid:'📋 计划处理',low:'💤 暂时搁置'};
-
-  var reasonsHTML = (r.reasons||[]).map(function(x){
-    return '<div class="reason-item"><span class="reason-bullet">·</span><span>'+x+'</span></div>';
-  }).join('');
-
-  var risksHTML = (r.risks||[]).map(function(x){
-    return '<div class="risk-item"><span class="risk-bullet">⚠</span><span>'+x+'</span></div>';
-  }).join('');
-
-  var resourcesHTML = (r.resources||[]).map(function(x){
-    return '<div class="resource-item"><span class="resource-bullet">✓</span><span>'+x+'</span></div>';
-  }).join('');
-
-  var stepsHTML = (r.steps||[]).map(function(x,i){
-    return '<div class="step-list-item"><div class="step-num-badge">'+(i+1)+'</div><span>'+x+'</span></div>';
-  }).join('');
-
   c.innerHTML=
     '<div class="step-heading">分析报告<span class="ai-badge">混元 lite</span></div>'+
     '<div class="report-grid">'+
@@ -854,16 +965,12 @@ function renderReport(c,r){
       '</div>'+
       '<div class="report-right">'+
         '<div class="report-sections">'+
-          '<div class="report-section"><div class="report-section-title">事件本质</div><div class="report-section-body">'+r.summary+'</div></div>'+
-          '<div class="report-section"><div class="report-section-title">判断依据</div><div class="report-section-body">'+reasonsHTML+'</div></div>'+
-          '<div class="report-section"><div class="report-section-title">不做的影响推演</div><div class="report-section-body">'+risksHTML+'</div></div>'+
-          '<div class="report-section"><div class="report-section-title">最佳执行时间窗口</div><div class="report-section-body">'+r.window+'</div></div>'+
-          '<div class="report-section"><div class="report-section-title">所需资源与前置条件</div><div class="report-section-body">'+resourcesHTML+'</div></div>'+
-          '<div class="report-section"><div class="report-section-title">最小可执行步骤</div><div class="report-section-body"><div class="step-list">'+stepsHTML+'</div></div></div>'+
-          '<div class="report-section"><div class="report-section-title">对工作和身心的影响</div><div class="report-section-body">'+r.impact+'</div></div>'+
-          '<div class="report-section"><div class="report-section-title">时机建议</div><div class="report-section-body">'+r.timing+'</div></div>'+
-          '<div class="report-section"><div class="report-section-title">个性化执行建议</div><div class="report-section-body">'+r.approach+'</div></div>'+
-          '<div class="report-section"><div class="report-section-title">参考视角</div><div class="report-section-body"><div class="perspective-box">'+r.perspective+'</div></div></div>'+
+          '<div class="report-section"><div class="report-section-title">事件本质</div><div class="report-section-body">'+(r.summary||'')+'</div></div>'+
+          '<div class="report-section"><div class="report-section-title">最佳执行时间窗口</div><div class="report-section-body">'+(r.window||'')+'</div></div>'+
+          '<div class="report-section"><div class="report-section-title">对工作和身心的影响</div><div class="report-section-body">'+(r.impact||'')+'</div></div>'+
+          '<div class="report-section"><div class="report-section-title">参考视角</div><div class="report-section-body"><div class="perspective-box">'+(r.perspective||'')+'</div></div></div>'+
+          '<div class="report-section"><div class="report-section-title">时机建议</div><div class="report-section-body">'+(r.timing||'')+'</div></div>'+
+          '<div class="report-section"><div class="report-section-title">个性化倾向分析</div><div class="report-section-body">'+(r.approach||'')+'</div></div>'+
         '</div>'+
       '</div>'+
     '</div>'+
@@ -989,14 +1096,125 @@ async function saveToHistory(){
 }
 
 // ── HISTORY ──
+var selectedHistoryIds = new Set();
+
 function renderHistory(){
-  var list=document.getElementById('historyList');if(!list)return;
-  if(!S.history.length){list.innerHTML='<div style="color:var(--text3);font-size:13px;padding:20px 0;text-align:center">暂无历史决策记录</div>';return;}
-  var ac={'立即做':'var(--danger)','稍后做':'var(--warn)','仅存档':'var(--text3)'};
-  list.innerHTML=S.history.map(function(r){
-    return '<div class="history-item"><div style="display:flex;align-items:center;gap:8px"><span class="history-event" style="flex:1">'+r.event+'</span><span class="history-score">'+r.score+'分</span></div>'+
-      '<div class="history-meta"><span>'+r.date+'</span><span style="color:'+(ac[r.action]||'var(--text3)')+'">'+r.action+'</span>'+(r.time?'<span>'+r.time+'</span>':'')+'</div></div>';
+  var list = document.getElementById('historyList'); if(!list) return;
+  if(!S.history.length){
+    list.innerHTML = '<div style="color:var(--text3);font-size:13px;padding:20px 0;text-align:center">暂无历史决策记录</div>';
+    return;
+  }
+  var ac = {'立即做':'var(--danger)','稍后做':'var(--warn)','仅存档':'var(--text3)'};
+  var toolbarHTML = '<div class="history-toolbar" id="historyToolbar">'+
+    '<span class="history-selected-count" id="selectedCount">已选 0 条</span>'+
+    '<button class="history-delete-btn" onclick="deleteSelectedHistory()">删除所选</button>'+
+    '<button class="btn btn-ghost" style="padding:5px 12px;font-size:12px" onclick="clearHistorySelection()">取消</button>'+
+  '</div>';
+  var itemsHTML = S.history.map(function(r){
+    var isChecked = selectedHistoryIds.has(r.id);
+    return '<div class="history-item" id="hitem-'+r.id+'">'+
+      '<div style="display:flex;align-items:center;gap:10px">'+
+        '<div class="history-check'+(isChecked?' checked':'')+'" onclick="toggleHistorySelect(this,event)"></div>'+
+        '<div style="flex:1;cursor:pointer" onclick="openHistoryModal(this)">'+
+          '<div style="display:flex;align-items:center;gap:8px">'+
+            '<span class="history-event" style="flex:1">'+r.event+'</span>'+
+            '<span class="history-score">'+r.score+'分</span>'+
+          '</div>'+
+          '<div class="history-meta">'+
+            '<span>'+r.date+'</span>'+
+            '<span style="color:'+(ac[r.action]||'var(--text3)')+'">'+r.action+'</span>'+
+            (r.time?'<span>'+r.time+'</span>':'')+
+          '</div>'+
+        '</div>'+
+      '</div>'+
+    '</div>';
   }).join('');
+  list.innerHTML = toolbarHTML + itemsHTML;
+  updateHistoryToolbar();
+}
+
+function toggleHistorySelect(el, event){
+  event.stopPropagation();
+  var item = el.closest('.history-item');
+  var id = item ? item.getAttribute('data-hid') : null;
+  if(!id) return;
+  if(selectedHistoryIds.has(id)) selectedHistoryIds.delete(id);
+  else selectedHistoryIds.add(id);
+  renderHistory();
+}
+
+function updateHistoryToolbar(){
+  var toolbar = document.getElementById('historyToolbar');
+  var countEl = document.getElementById('selectedCount');
+  if(!toolbar) return;
+  if(selectedHistoryIds.size > 0){
+    toolbar.classList.add('visible');
+    if(countEl) countEl.textContent = '已选 ' + selectedHistoryIds.size + ' 条';
+  } else {
+    toolbar.classList.remove('visible');
+  }
+}
+
+function clearHistorySelection(){
+  selectedHistoryIds.clear();
+  renderHistory();
+}
+
+async function deleteSelectedHistory(){
+  if(!selectedHistoryIds.size) return;
+  var ids = Array.from(selectedHistoryIds);
+  var res = await supa.from('decisions').delete().in('id', ids);
+  if(res.error){ console.warn('删除失败:', res.error); showSync('❌ 删除失败'); return; }
+  S.history = S.history.filter(function(h){ return !selectedHistoryIds.has(h.id); });
+  selectedHistoryIds.clear();
+  showSync('🗑 已删除');
+  renderHistory();
+}
+
+function openHistoryModal(elOrId){
+  var id = (typeof elOrId === 'string' || typeof elOrId === 'number') ? elOrId : 
+    (elOrId && elOrId.getAttribute ? elOrId.getAttribute('data-hid') : 
+    (elOrId && elOrId.closest ? elOrId.closest('[data-hid]') && elOrId.closest('[data-hid]').getAttribute('data-hid') : null));
+  var record = S.history.find(function(h){ return String(h.id) === String(id); });
+  if(!record) return;
+  supa.from('decisions').select('*').eq('id', id).single().then(function(res){
+    var d = res.data; if(!d) return;
+    var r = d.report || {};
+    var vl = r.verdict_level || 'mid';
+    var vl2 = {high:'⚡ 立刻处理', mid:'📋 计划处理', low:'💤 暂时搁置'};
+    var actionBadge = {'立即做':'now','稍后做':'later','仅存档':'archive'};
+    document.getElementById('modalTitle').textContent = (d.event_text||'').slice(0,30)+(d.event_text&&d.event_text.length>30?'…':'');
+    document.getElementById('modalMeta').textContent = new Date(d.created_at).toLocaleDateString('zh-CN')+(d.action_time?' · '+d.action_time:'');
+    var savedDims = S.dims;
+    S.dims = d.dims || {};
+    var radarSvg = makeRadar();
+    S.dims = savedDims;
+    var sectionsHTML = '';
+    if(r.summary) sectionsHTML += '<div class="report-section"><div class="report-section-title">事件本质</div><div class="report-section-body">'+r.summary+'</div></div>';
+    if(r.window) sectionsHTML += '<div class="report-section"><div class="report-section-title">最佳执行时间窗口</div><div class="report-section-body">'+r.window+'</div></div>';
+    if(r.impact) sectionsHTML += '<div class="report-section"><div class="report-section-title">对工作和身心的影响</div><div class="report-section-body">'+r.impact+'</div></div>';
+    if(r.perspective) sectionsHTML += '<div class="report-section"><div class="report-section-title">参考视角</div><div class="report-section-body"><div class="perspective-box">'+r.perspective+'</div></div></div>';
+    if(r.timing) sectionsHTML += '<div class="report-section"><div class="report-section-title">时机建议</div><div class="report-section-body">'+r.timing+'</div></div>';
+    if(r.approach) sectionsHTML += '<div class="report-section"><div class="report-section-title">个性化倾向分析</div><div class="report-section-body">'+r.approach+'</div></div>';
+    document.getElementById('modalBody').innerHTML =
+      '<div class="modal-left">'+
+        '<div class="radar-card" style="width:160px">'+radarSvg+
+          '<div class="score-big" style="font-size:32px">'+(r.score||'-')+'</div>'+
+          '<div class="score-label">综合优先级</div>'+
+          '<div class="verdict-badge '+vl+'" style="margin-bottom:8px">'+(vl2[vl]||r.verdict||'')+'</div>'+
+          '<div class="modal-action-badge '+(actionBadge[d.action_choice]||'archive')+'">'+(d.action_choice||'')+'</div>'+
+        '</div>'+
+      '</div>'+
+      '<div class="modal-right"><div class="report-sections" style="max-height:55vh;overflow-y:auto">'+sectionsHTML+'</div></div>';
+    document.getElementById('historyModal').classList.add('visible');
+  });
+}
+
+function closeHistoryModal(){
+  document.getElementById('historyModal').classList.remove('visible');
+}
+function closeModal(event){
+  if(event.target === document.getElementById('historyModal')) closeHistoryModal();
 }
 
 // ── AI CALL (via backend) ──
