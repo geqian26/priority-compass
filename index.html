@@ -161,6 +161,22 @@ body{background:var(--bg);font-family:var(--font);color:var(--text);min-height:1
 .resource-item{display:flex;gap:8px;font-size:13px;line-height:1.6;color:var(--text2);margin-bottom:4px;}
 .resource-bullet{color:var(--success);flex-shrink:0;font-weight:700;}
 .perspective-box{background:linear-gradient(135deg,rgba(91,127,232,0.05),rgba(61,189,125,0.04));border:1px solid rgba(91,127,232,0.15);border-radius:8px;padding:10px 13px;font-size:13px;color:var(--text2);line-height:1.7;font-style:italic;}
+.review-badge{display:inline-flex;align-items:center;gap:4px;font-size:10px;padding:2px 8px;border-radius:10px;}
+.review-badge.done{background:rgba(61,189,125,0.12);color:var(--success);}
+.review-badge.pending{background:rgba(240,160,48,0.10);color:var(--warn);}
+.review-modal-section{border-top:1px solid var(--border);padding-top:16px;margin-top:16px;}
+.review-modal-title{font-size:13px;font-weight:600;color:var(--text);margin-bottom:12px;}
+.review-dim-row{display:flex;align-items:center;gap:10px;margin-bottom:10px;}
+.review-dim-label{font-size:12px;color:var(--text2);width:70px;flex-shrink:0;}
+.review-chips{display:flex;gap:6px;flex-wrap:wrap;}
+.review-chip{padding:4px 10px;border-radius:6px;font-size:12px;background:var(--bg3);border:1px solid var(--border);color:var(--text2);cursor:pointer;transition:all .15s;}
+.review-chip:hover{border-color:var(--accent2);}
+.review-chip.selected{background:var(--accent-dim);border-color:rgba(91,127,232,0.35);color:var(--accent);font-weight:500;}
+.review-textarea{width:100%;padding:9px 12px;background:#fff;border:1.5px solid var(--border2);border-radius:8px;font-family:var(--font);font-size:13px;color:var(--text);resize:none;outline:none;line-height:1.6;}
+.review-textarea:focus{border-color:var(--accent);}
+.review-ai-result{background:var(--bg3);border:1px solid var(--border);border-radius:9px;padding:12px 14px;font-size:13px;color:var(--text2);line-height:1.75;margin-top:10px;}
+.review-submit-btn{padding:9px 20px;background:var(--accent);border:none;border-radius:8px;color:#fff;font-family:var(--font);font-size:13px;cursor:pointer;font-weight:500;margin-top:12px;}
+.review-submit-btn:hover{opacity:.86;}
 .radar-card{background:#fff;border:1px solid var(--border);border-radius:10px;padding:14px;text-align:center;}
 .score-big{font-size:40px;font-weight:700;font-family:var(--mono);color:var(--accent);line-height:1;margin-top:8px;}
 .score-label{font-size:10px;color:var(--text3);letter-spacing:1px;text-transform:uppercase;margin-top:3px;margin-bottom:10px;}
@@ -243,40 +259,143 @@ body{background:var(--bg);font-family:var(--font);color:var(--text);min-height:1
 .modal-action-badge.archive{background:var(--bg3);color:var(--text2);border:1px solid var(--border);}
 .sync-indicator{position:fixed;bottom:20px;right:20px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:8px 14px;font-size:12px;color:var(--text2);display:none;box-shadow:0 2px 8px rgba(0,0,0,0.08);}
 .sync-indicator.visible{display:block;}
+
+/* ── EMOTION CSS ── */
+/* 设置按钮 */
+.settings-btn{margin-top:6px;width:34px;height:34px;background:var(--bg3);border:1px solid var(--border);border-radius:8px;cursor:pointer;display:flex;align-items:center;justify-content:center;align-self:center;flex-shrink:0;font-size:16px;transition:background .15s;}
+.settings-btn:hover{background:var(--bg4);}
+.settings-panel{position:absolute;bottom:60px;left:8px;width:200px;background:#fff;border:1.5px solid var(--border2);border-radius:12px;padding:16px;box-shadow:0 4px 20px rgba(91,127,232,0.15);z-index:50;display:none;}
+.settings-panel.visible{display:block;}
+.settings-title{font-size:11px;color:var(--text3);letter-spacing:1px;text-transform:uppercase;margin-bottom:10px;}
+.mode-toggle{display:flex;background:var(--bg3);border-radius:8px;padding:3px;gap:3px;}
+.mode-btn{flex:1;padding:7px;border:none;border-radius:6px;font-family:var(--font);font-size:12px;cursor:pointer;background:transparent;color:var(--text2);transition:all .2s;}
+.mode-btn.active{background:#fff;color:var(--text);font-weight:500;box-shadow:0 1px 4px rgba(0,0,0,0.08);}
+
+/* 情绪报告卡片 */
+.verdict-emotion-card{border-radius:12px;padding:14px 16px;margin-bottom:16px;display:flex;align-items:center;gap:12px;}
+.verdict-emotion-card.high{background:linear-gradient(135deg,rgba(224,85,85,0.12),rgba(224,85,85,0.06));border:1.5px solid rgba(224,85,85,0.35);}
+.verdict-emotion-card.mid{background:linear-gradient(135deg,rgba(240,160,48,0.12),rgba(240,160,48,0.06));border:1.5px solid rgba(240,160,48,0.35);}
+.verdict-emotion-card.low{background:linear-gradient(135deg,rgba(91,127,232,0.10),rgba(91,127,232,0.04));border:1.5px solid rgba(91,127,232,0.25);}
+.verdict-emotion-text{flex:1;}
+.verdict-emotion-label{font-size:16px;font-weight:700;margin-bottom:4px;}
+.verdict-emotion-card.high .verdict-emotion-label{color:var(--danger);}
+.verdict-emotion-card.mid .verdict-emotion-label{color:var(--warn);}
+.verdict-emotion-card.low .verdict-emotion-label{color:var(--accent);}
+.verdict-emotion-sub{font-size:12px;line-height:1.6;}
+.verdict-emotion-card.high .verdict-emotion-sub{color:#c04040;}
+.verdict-emotion-card.mid .verdict-emotion-sub{color:#b07020;}
+.verdict-emotion-card.low .verdict-emotion-sub{color:var(--text2);}
+
+/* 决策后大卡片弹出 */
+.hype-overlay{position:fixed;inset:0;background:rgba(45,51,84,0.6);z-index:300;display:none;align-items:center;justify-content:center;}
+.hype-overlay.visible{display:flex;animation:fadeInBg .3s ease;}
+@keyframes fadeInBg{from{opacity:0}to{opacity:1}}
+.hype-card{background:#fff;border-radius:20px;padding:32px 36px;text-align:center;max-width:400px;width:90%;position:relative;overflow:hidden;box-shadow:0 8px 40px rgba(45,51,84,0.25);animation:popIn .4s cubic-bezier(.34,1.56,.64,1);}
+@keyframes popIn{from{transform:scale(.6) translateY(40px);opacity:0}to{transform:scale(1) translateY(0);opacity:1}}
+.hype-card-bg{position:absolute;inset:0;background:linear-gradient(135deg,rgba(91,127,232,0.06) 0%,rgba(61,189,125,0.04) 100%);}
+.hype-score{font-size:56px;font-weight:700;font-family:var(--mono);color:var(--accent);line-height:1;margin-bottom:4px;position:relative;}
+.hype-verdict{font-size:15px;font-weight:600;color:var(--text);margin-bottom:16px;position:relative;}
+.hype-message{font-size:18px;font-weight:700;color:var(--text);line-height:1.5;margin-bottom:8px;position:relative;}
+.hype-submsg{font-size:13px;color:var(--text2);margin-bottom:20px;position:relative;}
+.hype-close{padding:10px 28px;background:var(--accent);border:none;border-radius:10px;color:#fff;font-family:var(--font);font-size:14px;font-weight:500;cursor:pointer;position:relative;transition:transform .15s;}
+.hype-close:hover{transform:scale(1.04);}
+.hype-runner{position:relative;height:80px;margin-bottom:8px;overflow:visible;}
+
+/* SVG小人动画 */
+@keyframes runCycle{0%,100%{transform:translateX(0)}50%{transform:translateX(6px)}}
+@keyframes armSwing{0%,100%{transform:rotate(-20deg)}50%{transform:rotate(20deg)}}
+@keyframes legSwing{0%,100%{transform:rotate(20deg)}50%{transform:rotate(-20deg)}}
+@keyframes bounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-4px)}}
+@keyframes flagWave{0%,100%{transform:rotate(-5deg)}50%{transform:rotate(10deg)}}
+@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
+@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+@keyframes dash{0%{stroke-dashoffset:100}100%{stroke-dashoffset:0}}
+
+/* 紧急待办标记 */
+.urgent-flag{display:inline-flex;align-items:center;gap:4px;font-size:10px;font-family:var(--mono);padding:2px 7px;border-radius:4px;}
+.urgent-flag.high{background:rgba(224,85,85,0.12);color:var(--danger);}
 </style>
 </head>
 <body>
 <div class="app" id="app">
 
 <!-- LOGIN -->
-<div class="login-screen" id="loginScreen">
-  <div class="compass-icon">
-    <svg viewBox="0 0 96 96" fill="none">
-      <circle cx="48" cy="48" r="44" stroke="rgba(91,127,232,0.18)" stroke-width="1.5"/>
-      <circle cx="48" cy="48" r="34" stroke="rgba(91,127,232,0.12)" stroke-width="1"/>
-      <circle cx="48" cy="48" r="22" stroke="rgba(91,127,232,0.09)" stroke-width="1"/>
-      <text x="48" y="11" text-anchor="middle" font-size="9" fill="#A8B0C8" font-family="sans-serif">N</text>
-      <text x="48" y="89" text-anchor="middle" font-size="9" fill="#A8B0C8" font-family="sans-serif">S</text>
-      <text x="8" y="52" text-anchor="middle" font-size="9" fill="#A8B0C8" font-family="sans-serif">W</text>
-      <text x="89" y="52" text-anchor="middle" font-size="9" fill="#A8B0C8" font-family="sans-serif">E</text>
-      <line x1="48" y1="14" x2="48" y2="82" stroke="rgba(91,127,232,0.09)" stroke-width="0.8"/>
-      <line x1="14" y1="48" x2="82" y2="48" stroke="rgba(91,127,232,0.09)" stroke-width="0.8"/>
-      <g class="compass-needle">
-        <polygon points="48,17 51,48 48,52 45,48" fill="#5B7FE8"/>
-        <polygon points="48,79 51,48 48,52 45,48" fill="#C8D3F5"/>
+<div class="login-screen" id="loginScreen" style="position:absolute;inset:0;background:linear-gradient(135deg,#EEF2FF 0%,#F5F7FF 50%,#EBF5FF 100%);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:100;border-radius:16px;overflow:hidden;">
+  <!-- 热血背景 -->
+  <div style="position:absolute;inset:0;pointer-events:none;z-index:0;">
+    <svg width="100%" height="100%" viewBox="0 0 680 640" fill="none" preserveAspectRatio="xMidYMid slice">
+      <style>
+        @keyframes lfloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+        @keyframes lcape{0%,100%{transform:rotate(-5deg)}50%{transform:rotate(5deg)}}
+        @keyframes lglow{0%,100%{opacity:0.10}50%{opacity:0.20}}
+        .lg{animation:lfloat 3s ease-in-out infinite;transform-origin:340px 400px;}
+        .lc{animation:lcape 2s ease-in-out infinite;transform-origin:340px 260px;}
+        .lgr{animation:lglow 2.5s ease-in-out infinite;}
+      </style>
+      <circle cx="340" cy="340" r="260" fill="rgba(91,127,232,0.07)" class="lgr"/>
+      <circle cx="340" cy="340" r="180" fill="rgba(91,127,232,0.09)" class="lgr"/>
+      <line x1="40"  y1="600" x2="200" y2="40"  stroke="rgba(91,127,232,0.07)" stroke-width="1.2" stroke-dasharray="6 9"/>
+      <line x1="540" y1="600" x2="480" y2="40"  stroke="rgba(91,127,232,0.07)" stroke-width="1.2" stroke-dasharray="6 9"/>
+      <line x1="100" y1="620" x2="280" y2="20"  stroke="rgba(91,127,232,0.04)" stroke-width="1" stroke-dasharray="4 12"/>
+      <line x1="580" y1="620" x2="400" y2="20"  stroke="rgba(91,127,232,0.04)" stroke-width="1" stroke-dasharray="4 12"/>
+      <g class="lg">
+        <g class="lc">
+          <path d="M295 265 Q268 308 256 390 Q298 368 340 374 Q382 368 424 390 Q412 308 385 265 Q360 253 340 254 Q320 253 295 265Z" fill="rgba(91,127,232,0.45)"/>
+        </g>
+        <path d="M316 422 Q311 465 307 510" stroke="#3D4F8A" stroke-width="9" stroke-linecap="round" fill="none" opacity="0.6"/>
+        <path d="M364 422 Q369 465 373 510" stroke="#3D4F8A" stroke-width="9" stroke-linecap="round" fill="none" opacity="0.6"/>
+        <path d="M312 308 Q316 422 326 428 L354 428 Q364 422 368 308 Q354 297 340 297 Q326 297 312 308Z" fill="#4A5BA8" opacity="0.65"/>
+        <path d="M312 318 Q287 335 270 368 Q278 370 290 366 Q294 382 296 398 Q306 387 310 372 Q314 350 314 330Z" fill="#4A5BA8" opacity="0.65"/>
+        <path d="M368 318 Q395 303 416 286 Q420 279 422 270" stroke="#4A5BA8" stroke-width="12" stroke-linecap="round" fill="none" opacity="0.65"/>
+        <path d="M422 270 Q424 259 420 251" stroke="#4A5BA8" stroke-width="10" stroke-linecap="round" fill="none" opacity="0.65"/>
+        <ellipse cx="420" cy="246" rx="13" ry="11" fill="#3D4F8A" opacity="0.65"/>
+        <path d="M416 246 Q414 230 413 217 Q412 210 416 207 Q421 205 423 209 Q425 214 423 227 L421 240Z" fill="#3D4F8A" opacity="0.75"/>
+        <path d="M423 245 Q424 228 425 215 Q426 208 430 206 Q434 205 435 210 Q436 215 434 228 L430 242Z" fill="#3D4F8A" opacity="0.75"/>
+        <ellipse cx="340" cy="308" rx="34" ry="38" fill="#2D3354" opacity="0.70"/>
+        <path d="M308 290 Q312 262 320 251 Q330 237 340 235 Q352 233 362 244 Q374 256 374 282" stroke="#1A2040" stroke-width="14" stroke-linecap="round" fill="none" opacity="0.75"/>
+        <path d="M315 248 Q320 232 334 224 Q344 218 356 221 Q368 226 374 238" stroke="#1A2040" stroke-width="7" stroke-linecap="round" fill="none" opacity="0.75"/>
       </g>
-      <circle cx="48" cy="48" r="4" fill="#fff" stroke="#5B7FE8" stroke-width="1.5"/>
+      <g opacity="0.35">
+        <path d="M192 322 Q196 306 204 301 Q215 294 223 297 Q234 300 236 312 Q238 324 231 333 Q224 341 214 340 Q202 339 196 331Z" fill="#6B748F"/>
+        <path d="M196 340 Q194 368 192 402" stroke="#6B748F" stroke-width="8" stroke-linecap="round" fill="none"/>
+        <path d="M222 337 Q226 362 228 398" stroke="#6B748F" stroke-width="8" stroke-linecap="round" fill="none"/>
+        <path d="M196 355 Q183 366 179 381" stroke="#6B748F" stroke-width="6" stroke-linecap="round" fill="none"/>
+        <path d="M200 360 Q213 368 218 382" stroke="#6B748F" stroke-width="6" stroke-linecap="round" fill="none"/>
+      </g>
+      <g opacity="0.30">
+        <path d="M448 326 Q452 309 461 305 Q472 298 481 301 Q492 305 493 317 Q494 329 487 337 Q480 345 469 344 Q457 343 451 335Z" fill="#6B748F"/>
+        <path d="M452 344 Q450 372 448 408" stroke="#6B748F" stroke-width="8" stroke-linecap="round" fill="none"/>
+        <path d="M478 341 Q482 366 484 404" stroke="#6B748F" stroke-width="8" stroke-linecap="round" fill="none"/>
+        <path d="M451 360 Q438 371 434 386" stroke="#6B748F" stroke-width="6" stroke-linecap="round" fill="none"/>
+        <path d="M456 364 Q469 372 474 387" stroke="#6B748F" stroke-width="6" stroke-linecap="round" fill="none"/>
+      </g>
+      <g opacity="0.18">
+        <circle cx="108" cy="400" r="22" fill="#A8B0C8"/>
+        <path d="M96 422 Q93 452 90 486" stroke="#A8B0C8" stroke-width="9" stroke-linecap="round" fill="none"/>
+        <path d="M120 422 Q123 452 126 486" stroke="#A8B0C8" stroke-width="9" stroke-linecap="round" fill="none"/>
+      </g>
+      <g opacity="0.18">
+        <circle cx="574" cy="394" r="22" fill="#A8B0C8"/>
+        <path d="M562 416 Q559 446 556 480" stroke="#A8B0C8" stroke-width="9" stroke-linecap="round" fill="none"/>
+        <path d="M586 416 Q589 446 592 480" stroke="#A8B0C8" stroke-width="9" stroke-linecap="round" fill="none"/>
+      </g>
+      <ellipse cx="340" cy="530" rx="280" ry="24" fill="rgba(91,127,232,0.06)"/>
     </svg>
   </div>
-  <div class="login-title">优先罗盘</div>
-  <div class="login-sub">帮你在多件事之间<br>找到最该走的方向</div>
-  <div class="login-form">
-    <div class="login-label">用户名</div>
-    <input class="login-input" id="nameInput" placeholder="输入你的用户名" maxlength="20" onkeydown="if(event.key==='Enter')doLogin()"/>
-    <div class="login-error" id="loginError">用户名不能为空</div>
-    <button class="login-btn" id="loginBtn" onclick="doLogin()">进入决策舱</button>
+  <!-- 登录内容 -->
+  <div style="position:relative;z-index:1;display:flex;flex-direction:column;align-items:center;justify-content:center;width:100%;">
+    <div style="font-size:32px;font-weight:800;letter-spacing:-1px;color:var(--text);margin-bottom:4px;text-align:center;">燥起来吧，少年！🔥</div>
+    <div style="font-size:13px;color:var(--text2);margin-bottom:6px;text-align:center;line-height:1.7;">帮你在多件事之间，找到最该走的方向</div>
+    <div style="font-size:15px;font-weight:600;color:var(--accent);margin-bottom:24px;letter-spacing:2px;">优先罗盘</div>
+    <div class="login-form">
+      <div class="login-label">用户名</div>
+      <input class="login-input" id="nameInput" placeholder="输入你的用户名" maxlength="20" onkeydown="if(event.key==='Enter')doLogin()"/>
+      <div class="login-error" id="loginError" style="display:none;font-size:12px;color:var(--danger);align-self:flex-start;">用户名不能为空</div>
+      <button class="login-btn" id="loginBtn" onclick="doLogin()">进入决策舱 🚀</button>
+    </div>
   </div>
 </div>
+
 
 <!-- SIDEBAR -->
 <div class="sidebar" id="sidebar">
@@ -309,18 +428,104 @@ body{background:var(--bg);font-family:var(--font);color:var(--text);min-height:1
     <svg class="nav-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="10" cy="10" r="7"/><path d="M10 10l3-4M10 10l-4 2"/><circle cx="10" cy="10" r="1.5" fill="currentColor"/></svg>
     <span class="nav-label">事件决策</span>
   </div>
-  <div class="nav-item" id="navHistory" onclick="switchView('history')">
-    <svg class="nav-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 10a7 7 0 107-7"/><path d="M3 6V10h4"/><path d="M10 6v4l3 3"/></svg>
-    <span class="nav-label">历史存档</span>
+  <div class="nav-item" id="navReview" onclick="switchView('review')">
+    <svg class="nav-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="10" cy="10" r="7"/><path d="M10 7v3l2 2"/><path d="M6 3.3A7 7 0 0 0 3.3 6"/></svg>
+    <span class="nav-label">复盘</span>
   </div>
+  <div class="settings-btn" onclick="toggleSettings()" title="设置">⚙</div>
   <div class="toggle-btn" onclick="toggleSidebar()">
     <svg width="13" height="13" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5"><path id="toggleArrow" d="M5 3l4 4-4 4"/></svg>
+  </div>
+  <div class="settings-panel" id="settingsPanel">
+    <div class="settings-title">AI 说话风格</div>
+    <div class="mode-toggle">
+      <button class="mode-btn active" id="modeGentle" onclick="setMode('gentle')">😊 温柔</button>
+      <button class="mode-btn" id="modeSassy" onclick="setMode('sassy')">😈 毒舌</button>
+    </div>
   </div>
 </div>
 
 <!-- MAIN -->
 <div class="main">
-  <div class="view" id="homeView">
+  <div class="view" id="homeView" style="position:relative;overflow:hidden;">
+    <div style="position:absolute;inset:0;pointer-events:none;z-index:0;opacity:0.22;display:flex;align-items:flex-end;justify-content:center;">
+      <svg width="100%" viewBox="0 0 680 420" fill="none" xmlns="http://www.w3.org/2000/svg" style="position:absolute;bottom:0;left:0;right:0;">
+        <style>
+          @keyframes hfloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
+          @keyframes hcape{0%,100%{transform:rotate(-4deg)}50%{transform:rotate(4deg)}}
+          @keyframes hglow{0%,100%{opacity:0.18}50%{opacity:0.30}}
+          .hg{animation:hfloat 3s ease-in-out infinite;transform-origin:340px 300px;}
+          .hc{animation:hcape 2s ease-in-out infinite;transform-origin:340px 180px;}
+          .hgr{animation:hglow 2.5s ease-in-out infinite;}
+        </style>
+        <circle cx="340" cy="200" r="180" fill="rgba(91,127,232,0.08)" class="hgr"/>
+        <circle cx="340" cy="200" r="130" fill="rgba(91,127,232,0.10)" class="hgr"/>
+        <line x1="60" y1="380" x2="180" y2="60" stroke="rgba(91,127,232,0.12)" stroke-width="1" stroke-dasharray="6 8"/>
+        <line x1="500" y1="380" x2="400" y2="50" stroke="rgba(91,127,232,0.12)" stroke-width="1" stroke-dasharray="6 8"/>
+        <g class="hg">
+          <g class="hc">
+            <path d="M295 185 Q270 220 260 290 Q300 270 340 275 Q380 270 420 290 Q410 220 385 185 Q360 175 340 176 Q320 175 295 185Z" fill="rgba(91,127,232,0.9)"/>
+            <path d="M300 188 Q278 225 268 285 Q305 268 340 272" fill="rgba(71,107,212,0.6)"/>
+          </g>
+          <path d="M315 320 Q310 360 305 400" stroke="#3D4F8A" stroke-width="8" stroke-linecap="round" fill="none"/>
+          <path d="M365 320 Q370 360 375 400" stroke="#3D4F8A" stroke-width="8" stroke-linecap="round" fill="none"/>
+          <path d="M310 225 Q315 320 325 325 L355 325 Q365 320 370 225 Q355 215 340 215 Q325 215 310 225Z" fill="#4A5BA8"/>
+          <path d="M310 235 Q285 250 270 280 Q278 282 288 278 Q292 295 295 310 Q305 300 308 285 Q312 265 312 245Z" fill="#4A5BA8"/>
+          <path d="M370 235 Q395 250 410 280 Q402 282 392 278 Q388 295 385 310 Q375 300 372 285 Q368 265 368 245Z" fill="#4A5BA8"/>
+          <path d="M392 278 Q408 268 418 255 Q422 250 424 242" stroke="#4A5BA8" stroke-width="6" stroke-linecap="round" fill="none"/>
+          <path d="M424 242 Q426 234 422 228 Q418 222 416 220" stroke="#4A5BA8" stroke-width="5" stroke-linecap="round" fill="none"/>
+          <path d="M416 220 Q414 215 416 210 L422 204" stroke="#4A5BA8" stroke-width="4" stroke-linecap="round" fill="none"/>
+          <path d="M416 220 Q412 215 412 208 L410 200" stroke="#4A5BA8" stroke-width="3.5" stroke-linecap="round" fill="none"/>
+          <circle cx="422" cy="204" r="5" fill="#5B7FE8"/>
+          <circle cx="410" cy="200" r="5" fill="#5B7FE8"/>
+          <path d="M418 200 Q422 196 430 197 L430 202 Q424 202 420 204Z" fill="#5B7FE8"/>
+          <path d="M406 197 Q410 192 416 193 L414 198 Q410 197 408 200Z" fill="#5B7FE8"/>
+          <ellipse cx="340" cy="225" rx="32" ry="35" fill="#2D3354"/>
+          <path d="M308 210 Q312 185 320 175 Q330 162 340 160 Q352 158 362 168 Q374 180 374 205" stroke="#1A2040" stroke-width="12" stroke-linecap="round" fill="none"/>
+          <path d="M310 205 Q308 195 312 188 Q318 178 328 172" stroke="#252D50" stroke-width="8" stroke-linecap="round" fill="none"/>
+          <path d="M370 205 Q372 195 370 188 Q365 179 356 173" stroke="#252D50" stroke-width="7" stroke-linecap="round" fill="none"/>
+          <path d="M315 172 Q320 158 334 150 Q344 144 356 147 Q368 152 374 162" stroke="#1A2040" stroke-width="6" stroke-linecap="round" fill="none"/>
+          <path d="M316 168 Q322 156 336 150" stroke="#2A3460" stroke-width="4" stroke-linecap="round" fill="none"/>
+          <path d="M330 148 Q336 142 344 141 Q352 141 358 146" stroke="#2A3460" stroke-width="4" stroke-linecap="round" fill="none"/>
+          <path d="M308 212 Q304 205 302 198 Q300 190 303 185 Q308 210 312 215Z" fill="#1A2040"/>
+          <path d="M372 212 Q376 205 378 198 Q380 190 377 185 Q372 210 368 215Z" fill="#1A2040"/>
+        </g>
+        <g opacity="0.6">
+          <path d="M195 245 Q198 230 205 225 Q215 218 222 220 Q232 222 234 232 Q236 242 230 250 Q224 258 215 258 Q204 258 198 252Z" fill="#6B748F"/>
+          <path d="M198 258 Q196 280 194 310" stroke="#6B748F" stroke-width="7" stroke-linecap="round" fill="none"/>
+          <path d="M220 254 Q222 276 224 308" stroke="#6B748F" stroke-width="7" stroke-linecap="round" fill="none"/>
+          <path d="M199 270 Q188 278 184 290" stroke="#6B748F" stroke-width="5" stroke-linecap="round" fill="none"/>
+          <path d="M202 275 Q214 280 218 290" stroke="#6B748F" stroke-width="5" stroke-linecap="round" fill="none"/>
+          <path d="M194 310 Q192 335 190 365" stroke="#6B748F" stroke-width="6" stroke-linecap="round" fill="none"/>
+          <path d="M224 308 Q226 333 228 365" stroke="#6B748F" stroke-width="6" stroke-linecap="round" fill="none"/>
+        </g>
+        <g opacity="0.55">
+          <path d="M456 248 Q460 232 468 227 Q478 220 486 223 Q496 226 497 237 Q498 248 492 256 Q486 263 476 262 Q465 261 459 254Z" fill="#6B748F"/>
+          <path d="M460 262 Q458 285 457 315" stroke="#6B748F" stroke-width="7" stroke-linecap="round" fill="none"/>
+          <path d="M482 258 Q484 280 486 312" stroke="#6B748F" stroke-width="7" stroke-linecap="round" fill="none"/>
+          <path d="M460 274 Q448 282 445 294" stroke="#6B748F" stroke-width="5" stroke-linecap="round" fill="none"/>
+          <path d="M464 278 Q476 283 480 294" stroke="#6B748F" stroke-width="5" stroke-linecap="round" fill="none"/>
+          <path d="M457 315 Q455 340 453 368" stroke="#6B748F" stroke-width="6" stroke-linecap="round" fill="none"/>
+          <path d="M486 312 Q488 337 490 368" stroke="#6B748F" stroke-width="6" stroke-linecap="round" fill="none"/>
+        </g>
+        <g opacity="0.32">
+          <circle cx="130" cy="300" r="18" fill="#A8B0C8"/>
+          <path d="M120 318 Q118 345 116 375" stroke="#A8B0C8" stroke-width="7" stroke-linecap="round" fill="none"/>
+          <path d="M140 318 Q142 345 144 375" stroke="#A8B0C8" stroke-width="7" stroke-linecap="round" fill="none"/>
+          <path d="M120 328 Q108 338 104 351" stroke="#A8B0C8" stroke-width="5" stroke-linecap="round" fill="none"/>
+          <path d="M140 328 Q152 338 156 351" stroke="#A8B0C8" stroke-width="5" stroke-linecap="round" fill="none"/>
+        </g>
+        <g opacity="0.32">
+          <circle cx="552" cy="296" r="18" fill="#A8B0C8"/>
+          <path d="M542 314 Q540 341 538 371" stroke="#A8B0C8" stroke-width="7" stroke-linecap="round" fill="none"/>
+          <path d="M562 314 Q564 341 566 371" stroke="#A8B0C8" stroke-width="7" stroke-linecap="round" fill="none"/>
+          <path d="M542 324 Q530 334 526 347" stroke="#A8B0C8" stroke-width="5" stroke-linecap="round" fill="none"/>
+          <path d="M562 324 Q574 334 578 347" stroke="#A8B0C8" stroke-width="5" stroke-linecap="round" fill="none"/>
+        </g>
+      </svg>
+    </div>
+    <div style="position:relative;z-index:1;">
+    <div id="homeToast" style="display:none;background:linear-gradient(135deg,rgba(91,127,232,0.08),rgba(61,189,125,0.06));border:1px solid rgba(91,127,232,0.18);border-radius:10px;padding:12px 16px;margin-bottom:16px;font-size:13px;color:var(--text);line-height:1.6;"></div>
     <div class="view-title" id="homeGreeting">你好</div>
     <div class="view-sub">今天想做什么？</div>
     <div class="home-entry-cards">
@@ -339,6 +544,7 @@ body{background:var(--bg);font-family:var(--font);color:var(--text);min-height:1
     </div>
     <div class="section-label">最近决策</div>
     <div id="homeRecentList" style="display:flex;flex-direction:column;gap:6px"></div>
+    </div>
   </div>
 
   <div class="view" id="todoView">
@@ -372,15 +578,28 @@ body{background:var(--bg);font-family:var(--font);color:var(--text);min-height:1
     <div class="step-content" id="stepContent"></div>
   </div>
 
-  <div class="view" id="historyView">
-    <div class="view-title">历史存档</div>
-    <div class="view-sub">每次决策完成后自动存档</div>
-    <div id="historyList" style="display:flex;flex-direction:column;gap:8px"></div>
+  <div class="view" id="reviewView">
+    <div class="view-title">复盘</div>
+    <div class="view-sub">所有决策记录，点击任意一条开始复盘</div>
+    <div id="reviewList" style="display:flex;flex-direction:column;gap:8px"></div>
   </div>
 </div>
 </div>
 
 <div class="sync-indicator" id="syncIndicator">☁️ 同步中…</div>
+
+<!-- HYPE OVERLAY -->
+<div class="hype-overlay" id="hypeOverlay" onclick="closeHype()">
+  <div class="hype-card" onclick="event.stopPropagation()">
+    <div class="hype-card-bg"></div>
+    <div class="hype-runner" id="hypeRunner"></div>
+    <div class="hype-score" id="hypeScore">82</div>
+    <div class="hype-verdict" id="hypeVerdict">立刻处理</div>
+    <div class="hype-message" id="hypeMessage">Go！你做到了！</div>
+    <div class="hype-submsg" id="hypeSubmsg">Let\'s crush it! 🔥</div>
+    <button class="hype-close" onclick="closeHype()">冲！开始干！</button>
+  </div>
+</div>
 
 <!-- HISTORY DETAIL MODAL -->
 <div class="modal-overlay" id="historyModal" onclick="closeModal(event)">
@@ -401,9 +620,205 @@ const SUPA_KEY = 'sb_publishable_p1q_xvbLYLYAfKcYFy4xKA_-Dkhgz-s';
 const supa = supabase.createClient(SUPA_URL, SUPA_KEY);
 
 // ── STATE ──
+// ── MODE ──
+var appMode = localStorage.getItem('compass_mode') || 'gentle';
+
+function setMode(mode) {
+  appMode = mode;
+  localStorage.setItem('compass_mode', mode);
+  document.getElementById('modeGentle').classList.toggle('active', mode==='gentle');
+  document.getElementById('modeSassy').classList.toggle('active', mode==='sassy');
+  document.getElementById('settingsPanel').classList.remove('visible');
+}
+
+function toggleSettings() {
+  var p = document.getElementById('settingsPanel');
+  p.classList.toggle('visible');
+  // Init button states
+  document.getElementById('modeGentle').classList.toggle('active', appMode==='gentle');
+  document.getElementById('modeSassy').classList.toggle('active', appMode==='sassy');
+}
+
+// ── SVG 小人工厂 ──
+function makeSVGRunner(size) {
+  size = size || 60;
+  return '<svg width="'+size+'" height="'+size+'" viewBox="0 0 60 60" fill="none" xmlns="http://www.w3.org/2000/svg" style="animation:bounce 0.5s infinite ease-in-out">'+
+    // head
+    '<circle cx="30" cy="10" r="7" fill="#5B7FE8" opacity="0.9"/>'+
+    // body
+    '<line x1="30" y1="17" x2="30" y2="36" stroke="#5B7FE8" stroke-width="3" stroke-linecap="round"/>'+
+    // left arm
+    '<line x1="30" y1="22" x2="16" y2="30" stroke="#5B7FE8" stroke-width="2.5" stroke-linecap="round" style="transform-origin:30px 22px;animation:armSwing 0.4s infinite alternate"/>'+
+    // right arm
+    '<line x1="30" y1="22" x2="44" y2="28" stroke="#5B7FE8" stroke-width="2.5" stroke-linecap="round" style="transform-origin:30px 22px;animation:armSwing 0.4s infinite alternate reverse"/>'+
+    // left leg
+    '<line x1="30" y1="36" x2="18" y2="50" stroke="#5B7FE8" stroke-width="2.5" stroke-linecap="round" style="transform-origin:30px 36px;animation:legSwing 0.4s infinite alternate"/>'+
+    // right leg
+    '<line x1="30" y1="36" x2="42" y2="48" stroke="#5B7FE8" stroke-width="2.5" stroke-linecap="round" style="transform-origin:30px 36px;animation:legSwing 0.4s infinite alternate reverse"/>'+
+  '</svg>';
+}
+
+function makeSVGFlagman(size) {
+  size = size || 40;
+  return '<svg width="'+size+'" height="'+size+'" viewBox="0 0 40 50" fill="none" style="display:inline-block">'+
+    // head
+    '<circle cx="20" cy="8" r="5" fill="#E05555"/>'+
+    // body
+    '<line x1="20" y1="13" x2="20" y2="28" stroke="#E05555" stroke-width="2.5" stroke-linecap="round"/>'+
+    // arms up holding flag
+    '<line x1="20" y1="17" x2="30" y2="10" stroke="#E05555" stroke-width="2" stroke-linecap="round"/>'+
+    '<line x1="20" y1="17" x2="10" y2="22" stroke="#E05555" stroke-width="2" stroke-linecap="round"/>'+
+    // flag pole
+    '<line x1="30" y1="10" x2="30" y2="3" stroke="#E05555" stroke-width="1.5" stroke-linecap="round"/>'+
+    // flag
+    '<polygon points="30,3 38,6 30,9" fill="#E05555" style="transform-origin:30px 6px;animation:flagWave 0.5s infinite alternate"/>'+
+    // legs
+    '<line x1="20" y1="28" x2="14" y2="40" stroke="#E05555" stroke-width="2" stroke-linecap="round"/>'+
+    '<line x1="20" y1="28" x2="26" y2="40" stroke="#E05555" stroke-width="2" stroke-linecap="round"/>'+
+  '</svg>';
+}
+
+function makeSVGHypeRunner() {
+  return '<svg width="120" height="80" viewBox="0 0 120 80" fill="none" style="animation:bounce 0.4s infinite ease-in-out">'+
+    // cape/trail
+    '<ellipse cx="20" cy="45" rx="15" ry="6" fill="rgba(91,127,232,0.15)" style="animation:runCycle 0.3s infinite"/>'+
+    // body
+    '<circle cx="60" cy="20" r="12" fill="#5B7FE8"/>'+
+    '<text x="60" y="25" text-anchor="middle" font-size="14" fill="white">💪</text>'+
+    '<line x1="60" y1="32" x2="60" y2="55" stroke="#5B7FE8" stroke-width="4" stroke-linecap="round"/>'+
+    // arms
+    '<line x1="60" y1="38" x2="40" y2="46" stroke="#5B7FE8" stroke-width="3" stroke-linecap="round" style="transform-origin:60px 38px;animation:armSwing 0.3s infinite alternate"/>'+
+    '<line x1="60" y1="38" x2="80" y2="44" stroke="#5B7FE8" stroke-width="3" stroke-linecap="round" style="transform-origin:60px 38px;animation:armSwing 0.3s infinite alternate reverse"/>'+
+    // legs
+    '<line x1="60" y1="55" x2="44" y2="72" stroke="#5B7FE8" stroke-width="3" stroke-linecap="round" style="transform-origin:60px 55px;animation:legSwing 0.3s infinite alternate"/>'+
+    '<line x1="60" y1="55" x2="76" y2="70" stroke="#5B7FE8" stroke-width="3" stroke-linecap="round" style="transform-origin:60px 55px;animation:legSwing 0.3s infinite alternate reverse"/>'+
+    // speed lines
+    '<line x1="8" y1="30" x2="28" y2="30" stroke="rgba(91,127,232,0.3)" stroke-width="2" stroke-dasharray="4 3"/>'+
+    '<line x1="4" y1="40" x2="22" y2="40" stroke="rgba(91,127,232,0.2)" stroke-width="1.5" stroke-dasharray="3 3"/>'+
+    '<line x1="10" y1="50" x2="26" y2="50" stroke="rgba(91,127,232,0.15)" stroke-width="1" stroke-dasharray="3 4"/>'+
+  '</svg>';
+}
+
+function makeSVGThinker() {
+  return '<svg width="50" height="60" viewBox="0 0 50 60" fill="none">'+
+    '<circle cx="25" cy="12" r="9" fill="#F0A030"/>'+
+    '<text x="25" y="17" text-anchor="middle" font-size="12" fill="white">🤔</text>'+
+    '<line x1="25" y1="21" x2="25" y2="40" stroke="#F0A030" stroke-width="3" stroke-linecap="round"/>'+
+    '<line x1="25" y1="27" x2="10" y2="20" stroke="#F0A030" stroke-width="2.5" stroke-linecap="round" style="animation:armSwing 1s infinite alternate"/>'+
+    '<line x1="25" y1="27" x2="40" y2="32" stroke="#F0A030" stroke-width="2.5" stroke-linecap="round"/>'+
+    '<line x1="25" y1="40" x2="16" y2="55" stroke="#F0A030" stroke-width="2.5" stroke-linecap="round"/>'+
+    '<line x1="25" y1="40" x2="34" y2="55" stroke="#F0A030" stroke-width="2.5" stroke-linecap="round"/>'+
+    // thought bubble
+    '<circle cx="40" cy="6" r="3" fill="rgba(240,160,48,0.3)"/>'+
+    '<circle cx="45" cy="3" r="2" fill="rgba(240,160,48,0.2)"/>'+
+    '<circle cx="48" cy="1" r="1.5" fill="rgba(240,160,48,0.15)"/>'+
+  '</svg>';
+}
+
+function makeSVGRelax() {
+  return '<svg width="50" height="60" viewBox="0 0 50 60" fill="none" style="animation:float 2s infinite ease-in-out">'+
+    '<circle cx="25" cy="12" r="9" fill="#5B7FE8" opacity="0.7"/>'+
+    '<text x="25" y="17" text-anchor="middle" font-size="12" fill="white">😌</text>'+
+    '<line x1="25" y1="21" x2="25" y2="40" stroke="#5B7FE8" stroke-width="3" stroke-linecap="round" opacity="0.7"/>'+
+    '<line x1="25" y1="27" x2="10" y2="34" stroke="#5B7FE8" stroke-width="2.5" stroke-linecap="round" opacity="0.7"/>'+
+    '<line x1="25" y1="27" x2="40" y2="34" stroke="#5B7FE8" stroke-width="2.5" stroke-linecap="round" opacity="0.7"/>'+
+    '<line x1="25" y1="40" x2="18" y2="55" stroke="#5B7FE8" stroke-width="2.5" stroke-linecap="round" opacity="0.7"/>'+
+    '<line x1="25" y1="40" x2="32" y2="55" stroke="#5B7FE8" stroke-width="2.5" stroke-linecap="round" opacity="0.7"/>'+
+  '</svg>';
+}
+
+// ── 毒舌/温柔加载文案 ──
+var sassyLoadingLines = [
+  '还不快分析！数据在等你！',
+  '别催！比你还急，挖矿中…',
+  '拖延症患者专属分析通道开启中…',
+  '上次你也是这么磨磨蹭蹭的…',
+  'AI已启动，就等你下决心了…',
+  '数据在跑，你在干嘛？',
+];
+var gentleLoadingLines = [
+  'AI 正在为你深度分析 ☁️',
+  '稍等一下，认真思考中…',
+  '数据整理中，马上就好～',
+  '正在生成专属报告，请稍候',
+];
+
+function getLoadingLine() {
+  var lines = appMode==='sassy' ? sassyLoadingLines : gentleLoadingLines;
+  return lines[Math.floor(Math.random()*lines.length)];
+}
+
+// ── 情绪报告卡片 ──
+function makeEmotionCard(verdictLevel, score, sassyText) {
+  var configs = {
+    high: {
+      label: '🚨 警报！立刻处理！',
+      gentle: '时间紧迫，这件事需要你现在就行动！',
+      icon: makeSVGFlagman(44),
+    },
+    mid: {
+      label: '⚡ 注意！请安排上！',
+      gentle: '这件事值得认真对待，建议本周内处理。',
+      icon: makeSVGThinker(),
+    },
+    low: {
+      label: '😮‍💨 可以暂缓',
+      gentle: '这件事不紧迫，先放一放也没关系。',
+      icon: makeSVGRelax(),
+    }
+  };
+  var cfg = configs[verdictLevel] || configs.mid;
+  var subText = appMode==='sassy' ? (sassyText || '还在这里看？跨出去干啊！') : cfg.gentle;
+  return '<div class="verdict-emotion-card '+verdictLevel+'">'+
+    '<div style="flex-shrink:0">'+cfg.icon+'</div>'+
+    '<div class="verdict-emotion-text">'+
+      '<div class="verdict-emotion-label">'+cfg.label+'</div>'+
+      '<div class="verdict-emotion-sub">'+subText+'</div>'+
+    '</div>'+
+  '</div>';
+}
+
+// ── Hype 弹出卡片 ──
+var hypeMessages = {
+  sassy: {
+    '立即做': ['还在看！！Go！冲出去干啊！', '上一次也是这么拖的，今天不一样了！', '拖延症克星已上线，Let\'s go! 🔥'],
+    '稍后做': ['行吧，记得真的去做，别又鸽了！', '计划好了？那就别食言，冲！💪', '定好时间就去执行，Let\'s crush it!'],
+    '仅存档': ['了解，但记住：搁置不等于消失！', '先存着，但别让它变成永远的「待办」'],
+  },
+  gentle: {
+    '立即做': ['做出决定本身就是勇气！Go go go! 🎯', '你已经迈出最难的一步！Let\'s do this!', '冲！相信你能搞定的！💪'],
+    '稍后做': ['很好！计划是成功的一半！📅', '安排好了就放心～时间到了全力以赴！', '有计划的人最帅！Let\'s go!'],
+    '仅存档': ['了解自己的边界也是一种智慧！✨', '先放一放，把精力留给更重要的事！'],
+  }
+};
+
+function showHypeCard(action, score, verdict) {
+  var msgs = hypeMessages[appMode][action] || hypeMessages[appMode]['仅存档'];
+  var msg = msgs[Math.floor(Math.random()*msgs.length)];
+  var parts = msg.split('！');
+  var mainMsg = parts[0] + '！';
+  var subMsg = parts.slice(1).join('！');
+
+  document.getElementById('hypeScore').textContent = score || '-';
+  document.getElementById('hypeVerdict').textContent = verdict || '';
+  document.getElementById('hypeMessage').textContent = mainMsg;
+  document.getElementById('hypeSubmsg').textContent = subMsg || 'Let\'s crush it! 🔥';
+  document.getElementById('hypeRunner').innerHTML = makeSVGHypeRunner();
+
+  var closeBtn = document.querySelector('.hype-close');
+  if(closeBtn) closeBtn.textContent = action==='立即做' ? '冲！开始干！' : action==='稍后做' ? '好！已计划！' : '收到！存档！';
+
+  document.getElementById('hypeOverlay').classList.add('visible');
+  setTimeout(closeHype, 4000);
+}
+
+function closeHype() {
+  document.getElementById('hypeOverlay').classList.remove('visible');
+}
+
 var S = {
   user: null, // { id, username }
-  view: 'home', sidebarOpen: false, step: 0, calOffset: 0, calSelectedDate: null,
+  view: 'home', sidebarOpen: false, step: 0, calOffset: 0, calSelectedDate: null, pendingToast: null,
   eventText: '', energy: '普通', mood: '平稳',
   dims: {}, aiDims: {}, dimNotes: {}, reportData: null,
   actionChoice: '', actionTime: '',
@@ -478,7 +893,8 @@ async function loadAllData() {
   S.history = (historyRes.data || []).map(function(d){ return {
     id:d.id, date:new Date(d.created_at).toLocaleDateString('zh-CN'),
     event:(d.event_text||'').slice(0,40), action:d.action_choice,
-    time:d.action_time, score:d.report?d.report.score:'-', verdict:d.report?d.report.verdict:'-'
+    time:d.action_time, score:d.report?d.report.score:'-', verdict:d.report?d.report.verdict:'-',
+    reviewed: !!(d.review && d.review.done !== undefined)
   };});
 }
 
@@ -491,14 +907,14 @@ function toggleSidebar() {
 
 // ── VIEW SWITCHING ──
 function switchView(v) {
-  ['homeView','todoView','calView','decisionView','historyView'].forEach(function(id){
+  ['homeView','todoView','calView','decisionView','reviewView'].forEach(function(id){
     var el=document.getElementById(id);if(!el)return;el.classList.remove('visible');el.style.display='none';
   });
-  ['navHome','navTodo','navCal','navDecision','navHistory'].forEach(function(id){
+  ['navHome','navTodo','navCal','navDecision','navReview'].forEach(function(id){
     var el=document.getElementById(id);if(el)el.classList.remove('active');
   });
-  var vmap={home:'homeView',todo:'todoView',cal:'calView',decision:'decisionView',history:'historyView'};
-  var nmap={home:'navHome',todo:'navTodo',cal:'navCal',decision:'navDecision',history:'navHistory'};
+  var vmap={home:'homeView',todo:'todoView',cal:'calView',decision:'decisionView',review:'reviewView'};
+  var nmap={home:'navHome',todo:'navTodo',cal:'navCal',decision:'navDecision',review:'navReview'};
   var t=document.getElementById(vmap[v]);if(!t)return;
   if(v==='decision'){t.style.display='flex';}else{t.style.display='block';t.classList.add('visible');}
   var nt=document.getElementById(nmap[v]);if(nt)nt.classList.add('active');
@@ -507,7 +923,19 @@ function switchView(v) {
   if(v==='decision')renderDecision();
   if(v==='todo')renderTodos();
   if(v==='home'){S.calSelectedDate=null;renderHome();}
-  if(v==='history')renderHistory();
+  if(v==='review')renderHistory();
+}
+
+function goHomeWithToast() {
+  switchView('home');
+  if(S.pendingToast) {
+    var toast = document.getElementById('homeToast');
+    if(toast) {
+      toast.textContent = S.pendingToast;
+      toast.style.display = 'block';
+      setTimeout(function(){ toast.style.display='none'; S.pendingToast=null; }, 5000);
+    }
+  }
 }
 
 function startNewDecision() {
@@ -522,9 +950,19 @@ function renderHome() {
   if(!S.history.length){list.innerHTML='<div style="color:var(--text3);font-size:12px;padding:8px 0">暂无记录，完成一次决策后将显示在这里</div>';return;}
   var ac={'立即做':'var(--danger)','稍后做':'var(--warn)','仅存档':'var(--text3)'};
   list.innerHTML=S.history.slice(0,3).map(function(r){
-    return '<div class="history-item" style="cursor:pointer" onclick="switchView(\'history\')">'+
-      '<div style="display:flex;align-items:center;gap:8px"><span class="history-event" style="flex:1">'+r.event+'</span><span class="history-score">'+r.score+'分</span></div>'+
-      '<div class="history-meta"><span>'+r.date+'</span><span style="color:'+(ac[r.action]||'var(--text3)')+'">'+r.action+'</span></div></div>';
+    var badge = r.reviewed
+      ? '<span class="review-badge done">✓ 已复盘</span>'
+      : '<span class="review-badge pending">待复盘</span>';
+    return '<div class="history-item" style="cursor:pointer" onclick="switchView(\'review\')">' +
+      '<div style="display:flex;align-items:center;gap:8px">' +
+        '<span class="history-event" style="flex:1">'+r.event+'</span>' +
+        badge +
+        '<span class="history-score">'+r.score+'分</span>' +
+      '</div>' +
+      '<div class="history-meta"><span>'+r.date+'</span>' +
+        '<span style="color:'+(ac[r.action]||'var(--text3)')+'">'+r.action+'</span>' +
+      '</div>' +
+    '</div>';
   }).join('');
 }
 
@@ -595,10 +1033,14 @@ function renderTodos() {
 function mkTodoHTML(t){
   var pc=t.pri==='高'?'pri-high':t.pri==='中'?'pri-mid':'pri-low';
   var pl=t.pri==='高'?'紧急':t.pri==='中'?'本周':'计划';
-  return '<div class="todo-item"><div class="todo-check'+(t.done?' done':'')+'" onclick="toggleTodo(\''+t.id+'\')"></div>'+
+  var flagIcon = (t.pri==='高' && !t.done) ? makeSVGFlagman(22) : '';
+  return '<div class="todo-item">'+
+    '<div class="todo-check'+(t.done?' done':'')+'" onclick="toggleTodo(t.id)"></div>'+
     '<div class="todo-text'+(t.done?' striked':'')+'">'+t.text+'</div>'+
+    (t.pri==='高'&&!t.done ? '<span style="flex-shrink:0">'+flagIcon+'</span>' : '')+
     '<div class="todo-pri '+pc+'">'+pl+'</div>'+
-    '<div class="del-btn" onclick="deleteTodo(\''+t.id+'\')">×</div></div>';
+    '<div class="del-btn" onclick="deleteTodo(t.id)">×</div>'+
+  '</div>';
 }
 async function addTodo(){
   var inp=document.getElementById('todoInput'),txt=inp.value.trim();if(!txt)return;
@@ -757,9 +1199,16 @@ function sub0(){
 
 // STEP 1
 function step1(c){
+  var loadText = getLoadingLine();
   c.innerHTML='<div class="step-heading">AI 正在分析<span class="ai-badge">混元 lite</span></div>'+
-    '<div class="step-sub">根据你的描述，正在预判七个维度……</div>'+
-    '<div class="ai-loading"><div class="dot-pulse"><span></span><span></span><span></span></div><span>正在理解事件背景</span></div>';
+    '<div class="step-sub">正在预判七个维度，挖掘数据中…</div>'+
+    '<div style="display:flex;flex-direction:column;align-items:center;padding:24px 0">'+
+      '<div style="animation:bounce 0.5s infinite ease-in-out">'+makeSVGRunner(70)+'</div>'+
+      '<div class="ai-loading" style="margin-top:16px">'+
+        '<div class="dot-pulse"><span></span><span></span><span></span></div>'+
+        '<span style="font-size:14px;font-weight:500;color:var(--text)">'+loadText+'</span>'+
+      '</div>'+
+    '</div>';
 }
 async function aiPredict(){
   var dimDesc = DIM_DEFS.map(function(d,i){
@@ -819,9 +1268,18 @@ function sub2(){S.dims=collectDims();goStep(3);aiReport();}
 // STEP 3
 function step3(c){
   if(S.reportData){renderReport(c,S.reportData);return;}
+  var loadText = appMode==='sassy'
+    ? sassyLoadingLines[Math.floor(Math.random()*sassyLoadingLines.length)]
+    : '正在为你生成深度分析报告…';
   c.innerHTML='<div class="step-heading">分析报告<span class="ai-badge">混元 lite</span></div>'+
-    '<div class="step-sub">正在综合判断七个维度……</div>'+
-    '<div class="ai-loading"><div class="dot-pulse"><span></span><span></span><span></span></div><span>正在生成深度分析</span></div>';
+    '<div class="step-sub">综合七个维度，深度报告生成中…</div>'+
+    '<div style="display:flex;flex-direction:column;align-items:center;padding:24px 0">'+
+      '<div style="animation:bounce 0.5s infinite ease-in-out">'+makeSVGRunner(70)+'</div>'+
+      '<div class="ai-loading" style="margin-top:16px">'+
+        '<div class="dot-pulse"><span></span><span></span><span></span></div>'+
+        '<span style="font-size:14px;font-weight:500;color:var(--text)">'+loadText+'</span>'+
+      '</div>'+
+    '</div>';
 }
 async function aiReport(){
   // 1. 维度数据（选项+补充说明）
@@ -886,12 +1344,15 @@ async function aiReport(){
     '  "score": 0到100的整数,\n'+
     '  "verdict": "立刻处理或计划处理或暂时搁置",\n'+
     '  "verdict_level": "high或mid或low",\n'+
-    '  "summary": "先逐一说明各维度反映了什么，再综合推导出这件事的本质和核心矛盾，要有深度洞察",\n'+
+    '  "summary": "直接给出这件事的本质结论和核心矛盾，不要重复用户填写的选项内容，要有深度洞察，让用户感到被真正理解",\n'+
     '  "window": "详细说明最佳执行时间窗口，为什么这个时间段最合适，结合用户当前精力和情绪具体分析",\n'+
     '  "impact": "深度分析做成这件事对工作效率、人际关系、个人成长的影响，以及需要注意的潜在风险和身心消耗",\n'+
-    '  "perspective": "基于知识库分析：做成类似这件事的人通常会经历什么过程，有哪些典型的后续发展和影响，给用户提供真实参考预期",\n'+
     '  "timing": "结合用户精力和情绪给出具体时机建议，包括什么时间开始最合适、如何规避干扰、如何保持状态",\n'+
-    '  "approach": "深度解读用户最在意的维度背后的决策倾向，分析用户是什么样的人，这对这次决策意味着什么，给出真正个性化的建议"\n'+
+    '  "approach": "深度解读用户最在意的维度背后的决策倾向，分析用户是什么样的人，这对这次决策意味着什么，给出真正个性化的建议",\n'+
+    '  "perspective": "基于知识库分析：做成类似这件事的人通常会经历什么过程，有哪些典型的后续发展，给用户提供真实参考预期",\n'+
+    (appMode==='sassy' ?
+      '  "sassyQuip": "用尖酸刻薄但不失幽默的语气，针对这件事的具体情况，给用户一句催命式的毒舌话，中英文混合，20-30字，带点刺激感，让他立刻想去行动"\n' :
+      '  "sassyQuip": null\n')+
     '}';
 
   console.log('发送分析报告请求...');
@@ -953,8 +1414,10 @@ function fbReport(){
 function renderReport(c,r){
   var vl=r.verdict_level||'mid';
   var vl2={high:'⚡ 立刻处理',mid:'📋 计划处理',low:'💤 暂时搁置'};
+  var emotionCard = makeEmotionCard(vl, r.score, r.sassyQuip);
   c.innerHTML=
     '<div class="step-heading">分析报告<span class="ai-badge">混元 lite</span></div>'+
+    emotionCard+
     '<div class="report-grid">'+
       '<div>'+
         '<div class="radar-card">'+makeRadar()+
@@ -968,9 +1431,9 @@ function renderReport(c,r){
           '<div class="report-section"><div class="report-section-title">事件本质</div><div class="report-section-body">'+(r.summary||'')+'</div></div>'+
           '<div class="report-section"><div class="report-section-title">最佳执行时间窗口</div><div class="report-section-body">'+(r.window||'')+'</div></div>'+
           '<div class="report-section"><div class="report-section-title">对工作和身心的影响</div><div class="report-section-body">'+(r.impact||'')+'</div></div>'+
-          '<div class="report-section"><div class="report-section-title">参考视角</div><div class="report-section-body"><div class="perspective-box">'+(r.perspective||'')+'</div></div></div>'+
           '<div class="report-section"><div class="report-section-title">时机建议</div><div class="report-section-body">'+(r.timing||'')+'</div></div>'+
           '<div class="report-section"><div class="report-section-title">个性化倾向分析</div><div class="report-section-body">'+(r.approach||'')+'</div></div>'+
+          '<div class="report-section"><div class="report-section-title">参考视角</div><div class="report-section-body"><div class="perspective-box">'+(r.perspective||'')+'</div></div></div>'+
         '</div>'+
       '</div>'+
     '</div>'+
@@ -1026,9 +1489,12 @@ async function subDecision(){
   if((S.actionChoice==='立即做'||S.actionChoice==='稍后做') && !S.actionTime){
     alert('请选择一个时间'); return;
   }
-  // 先归档
   await saveToHistory();
-  // 再生成鼓励
+  // 先显示 Hype 卡片
+  var score = S.reportData ? S.reportData.score : '-';
+  var verdict = S.reportData ? S.reportData.verdict : '';
+  showHypeCard(S.actionChoice, score, verdict);
+  // 同时生成鼓励语（不阻塞）
   aiEnc();
 }
 async function aiEnc(){
@@ -1044,8 +1510,9 @@ async function aiEnc(){
 function showEnc(enc){
   var area=document.getElementById('encArea');if(!area)return;
   var icons={'立即做':'🎯','稍后做':'📅','仅存档':'🗂'};
+  S.pendingToast = '✨ ' + enc.encourage + '  💡 ' + enc.tip;
   area.innerHTML='<div class="encourage-box"><div class="encourage-icon">'+(icons[S.actionChoice]||'✨')+'</div><div class="encourage-text">'+enc.encourage+'</div><div class="encourage-sub">小提示：'+enc.tip+'</div></div>'+
-    '<div class="btn-row"><button class="btn btn-primary" onclick="goStep(5)">记录复盘</button><button class="btn btn-ghost" onclick="startNewDecision()">新的决策</button><button class="btn btn-ghost" onclick="switchView(\'home\')">回到首页</button></div>';
+    '<div class="btn-row"><button class="btn btn-primary" onclick="switchView(\'review\')">记录复盘</button><button class="btn btn-ghost" onclick="startNewDecision()">新的决策</button><button class="btn btn-ghost" onclick="goHomeWithToast()">回到首页</button></div>';
 }
 
 // STEP 5
@@ -1088,20 +1555,21 @@ async function saveToHistory(){
       action: data.action_choice,
       time: data.action_time,
       score: data.report ? data.report.score : '-',
-      verdict: data.report ? data.report.verdict : '-'
+      verdict: data.report ? data.report.verdict : '-',
+      reviewed: false
     });
     console.log('归档成功, id:', data.id);
     showSync('☁️ 已归档');
   }
 }
 
-// ── HISTORY ──
+// ── REVIEW (原历史存档+复盘) ──
 var selectedHistoryIds = new Set();
 
-function renderHistory(){
-  var list = document.getElementById('historyList'); if(!list) return;
+function renderReview(){
+  var list = document.getElementById('reviewList'); if(!list) return;
   if(!S.history.length){
-    list.innerHTML = '<div style="color:var(--text3);font-size:13px;padding:20px 0;text-align:center">暂无历史决策记录</div>';
+    list.innerHTML = '<div style="color:var(--text3);font-size:13px;padding:20px 0;text-align:center">暂无决策记录，完成一次决策后将显示在这里</div>';
     return;
   }
   var ac = {'立即做':'var(--danger)','稍后做':'var(--warn)','仅存档':'var(--text3)'};
@@ -1112,12 +1580,16 @@ function renderHistory(){
   '</div>';
   var itemsHTML = S.history.map(function(r){
     var isChecked = selectedHistoryIds.has(r.id);
-    return '<div class="history-item" id="hitem-'+r.id+'">'+
+    var reviewedBadge = r.reviewed
+      ? '<span class="review-badge done">✓ 已复盘</span>'
+      : '<span class="review-badge pending">待复盘</span>';
+    return '<div class="history-item" data-hid="'+r.id+'">'+
       '<div style="display:flex;align-items:center;gap:10px">'+
-        '<div class="history-check'+(isChecked?' checked':'')+'" onclick="toggleHistorySelect(this,event)"></div>'+
-        '<div style="flex:1;cursor:pointer" onclick="openHistoryModal(this)">'+
+        '<div class="history-check'+(isChecked?' checked':'')+ '" onclick="toggleHistorySelect(this,event)"></div>'+
+        '<div style="flex:1;cursor:pointer" onclick="openReviewModal(this.closest(\'.history-item\').getAttribute(\'data-hid\'))">'+
           '<div style="display:flex;align-items:center;gap:8px">'+
             '<span class="history-event" style="flex:1">'+r.event+'</span>'+
+            reviewedBadge+
             '<span class="history-score">'+r.score+'分</span>'+
           '</div>'+
           '<div class="history-meta">'+
@@ -1140,7 +1612,7 @@ function toggleHistorySelect(el, event){
   if(!id) return;
   if(selectedHistoryIds.has(id)) selectedHistoryIds.delete(id);
   else selectedHistoryIds.add(id);
-  renderHistory();
+  renderReview();
 }
 
 function updateHistoryToolbar(){
@@ -1157,7 +1629,7 @@ function updateHistoryToolbar(){
 
 function clearHistorySelection(){
   selectedHistoryIds.clear();
-  renderHistory();
+  renderReview();
 }
 
 async function deleteSelectedHistory(){
@@ -1168,13 +1640,10 @@ async function deleteSelectedHistory(){
   S.history = S.history.filter(function(h){ return !selectedHistoryIds.has(h.id); });
   selectedHistoryIds.clear();
   showSync('🗑 已删除');
-  renderHistory();
+  renderReview();
 }
 
-function openHistoryModal(elOrId){
-  var id = (typeof elOrId === 'string' || typeof elOrId === 'number') ? elOrId : 
-    (elOrId && elOrId.getAttribute ? elOrId.getAttribute('data-hid') : 
-    (elOrId && elOrId.closest ? elOrId.closest('[data-hid]') && elOrId.closest('[data-hid]').getAttribute('data-hid') : null));
+function openReviewModal(id){
   var record = S.history.find(function(h){ return String(h.id) === String(id); });
   if(!record) return;
   supa.from('decisions').select('*').eq('id', id).single().then(function(res){
@@ -1196,6 +1665,34 @@ function openHistoryModal(elOrId){
     if(r.perspective) sectionsHTML += '<div class="report-section"><div class="report-section-title">参考视角</div><div class="report-section-body"><div class="perspective-box">'+r.perspective+'</div></div></div>';
     if(r.timing) sectionsHTML += '<div class="report-section"><div class="report-section-title">时机建议</div><div class="report-section-body">'+r.timing+'</div></div>';
     if(r.approach) sectionsHTML += '<div class="report-section"><div class="report-section-title">个性化倾向分析</div><div class="report-section-body">'+r.approach+'</div></div>';
+    // Build review section
+    var existingReview = d.review || {};
+    var reviewHTML = '<div class="review-modal-section" data-review-id="'+d.id+'">'+
+      '<div class="review-modal-title">复盘记录</div>'+
+      '<div class="review-dim-row"><span class="review-dim-label">完成情况</span><div class="review-chips" id="rv-done">'+
+        ['完成','部分完成','未完成'].map(function(o){
+          return '<div class="review-chip'+(existingReview.done===o?' selected':'')+'" onclick="selReviewChip(this,\'rv-done\')">'+o+'</div>';
+        }).join('')+
+      '</div></div>'+
+      '<div class="review-dim-row"><span class="review-dim-label">实际耗时</span><div class="review-chips" id="rv-time">'+
+        ['<1小时','2-3小时','3-5小时','>5小时'].map(function(o){
+          return '<div class="review-chip'+(existingReview.time===o?' selected':'')+'" onclick="selReviewChip(this,\'rv-time\')">'+o+'</div>';
+        }).join('')+
+      '</div></div>'+
+      '<div class="review-dim-row"><span class="review-dim-label">完成状态</span><div class="review-chips" id="rv-state">'+
+        ['精力充沛','还好','挣扎完成'].map(function(o){
+          return '<div class="review-chip'+(existingReview.state===o?' selected':'')+'" onclick="selReviewChip(this,\'rv-state\')">'+o+'</div>';
+        }).join('')+
+      '</div></div>'+
+      '<div style="margin-top:8px"><textarea class="review-textarea" id="rv-note" rows="3" placeholder="和预期有什么不同？有什么新的想法？">'+
+        (existingReview.note||'')+
+      '</textarea></div>'+
+      (existingReview.aiAnalysis ? '<div class="review-ai-result">'+existingReview.aiAnalysis+'</div>' : '')+
+      '<button class="review-submit-btn" onclick="submitReview(this.closest(\'[data-review-id]\').getAttribute(\'data-review-id\'))">'+
+        (existingReview.done ? '更新复盘' : '提交复盘并获得 AI 分析')+
+      '</button>'+
+    '</div>';
+
     document.getElementById('modalBody').innerHTML =
       '<div class="modal-left">'+
         '<div class="radar-card" style="width:160px">'+radarSvg+
@@ -1205,7 +1702,10 @@ function openHistoryModal(elOrId){
           '<div class="modal-action-badge '+(actionBadge[d.action_choice]||'archive')+'">'+(d.action_choice||'')+'</div>'+
         '</div>'+
       '</div>'+
-      '<div class="modal-right"><div class="report-sections" style="max-height:55vh;overflow-y:auto">'+sectionsHTML+'</div></div>';
+      '<div class="modal-right" style="overflow-y:auto;max-height:62vh">'+
+        '<div class="report-sections">'+sectionsHTML+'</div>'+
+        reviewHTML+
+      '</div>';
     document.getElementById('historyModal').classList.add('visible');
   });
 }
@@ -1215,6 +1715,74 @@ function closeHistoryModal(){
 }
 function closeModal(event){
   if(event.target === document.getElementById('historyModal')) closeHistoryModal();
+}
+
+function selReviewChip(el, groupId){
+  document.getElementById(groupId).querySelectorAll('.review-chip').forEach(function(c){c.classList.remove('selected');});
+  el.classList.add('selected');
+}
+
+async function submitReview(decisionId){
+  var done = '';
+  var doneEl = document.getElementById('rv-done');
+  if(doneEl){ var s=doneEl.querySelector('.review-chip.selected'); if(s) done=s.textContent; }
+  var time = '';
+  var timeEl = document.getElementById('rv-time');
+  if(timeEl){ var s=timeEl.querySelector('.review-chip.selected'); if(s) time=s.textContent; }
+  var state = '';
+  var stateEl = document.getElementById('rv-state');
+  if(stateEl){ var s=stateEl.querySelector('.review-chip.selected'); if(s) state=s.textContent; }
+  var note = document.getElementById('rv-note') ? document.getElementById('rv-note').value : '';
+
+  if(!done){ alert('请选择完成情况'); return; }
+
+  // Get the decision record for AI analysis
+  var record = S.history.find(function(h){ return String(h.id) === String(decisionId); });
+  var btn = document.querySelector('.review-submit-btn');
+  if(btn){ btn.textContent='AI 分析中…'; btn.disabled=true; }
+
+  // AI review analysis
+  var prompt = '你是一个决策复盘助手。\n'+
+    '用户做了一个决策：「'+(record?record.event:'')+'」\n'+
+    '当时AI建议：'+(record?record.verdict:'')+'\n'+
+    '用户选择：'+(record?record.action:'')+'\n'+
+    '复盘结果：完成情况='+done+'，实际耗时='+time+'，完成状态='+state+'\n'+
+    (note?'用户备注：'+note+'\n':'')+
+    '\n请给出深度复盘分析：\n'+
+    '1. 这次决策和执行的整体评价\n'+
+    '2. 预估和实际的差异分析（如果有）\n'+
+    '3. 从这次经历中可以学到什么，对用户未来决策有什么启示\n'+
+    '4. 用户的行为模式分析（结合这次表现）\n'+
+    '直接给出分析文本，不需要JSON格式，语气自然亲切。';
+
+  var aiResult = await callAI(prompt, 800);
+  if(!aiResult) aiResult = '完成了这次决策，每一次经历都是成长的积累。';
+
+  var reviewData = { done:done, time:time, state:state, note:note, aiAnalysis:aiResult };
+
+  // Save to Supabase
+  var res = await supa.from('decisions').update({ review: reviewData }).eq('id', decisionId);
+  if(res.error){ console.warn('复盘保存失败:', res.error); }
+
+  // Update local state
+  var idx = S.history.findIndex(function(h){ return String(h.id)===String(decisionId); });
+  if(idx > -1){ S.history[idx].reviewed = true; }
+
+  // Show AI result in modal
+  var aiResultEl = document.querySelector('.review-ai-result');
+  if(aiResultEl){ aiResultEl.textContent = aiResult; }
+  else {
+    var textarea = document.getElementById('rv-note');
+    if(textarea){
+      var div = document.createElement('div');
+      div.className = 'review-ai-result';
+      div.textContent = aiResult;
+      textarea.parentNode.after(div);
+    }
+  }
+  if(btn){ btn.textContent='已更新复盘'; btn.disabled=false; }
+  showSync('☁️ 复盘已保存');
+  renderReview();
 }
 
 // ── AI CALL (via backend) ──
