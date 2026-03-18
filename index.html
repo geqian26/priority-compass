@@ -605,29 +605,11 @@ function step1(c){
     '<div class="ai-loading"><div class="dot-pulse"><span></span><span></span><span></span></div><span>正在理解事件背景</span></div>';
 }
 async function aiPredict(){
-  var dimDesc = DIM_DEFS.map(function(d,i){
-    return i+'. '+d.key+'的选项：'+d.opts.map(function(o,j){return j+'='+o;}).join('，');
-  }).join('\n');
-  var p = '你是一个决策分析助手。\n用户描述的事件：「'+S.eventText+'」\n用户当前精力：'+S.energy+'，情绪：'+S.mood+'\n\n请根据事件内容，判断以下每个维度最合适的选项索引（从0开始）：\n'+dimDesc+
-    '\n\n请只返回一个JSON对象，格式严格如下，不要有任何解释或其他文字：\n{"time":0,"impact":0,"rev":0,"other":0,"cost":0,"block":0,"gain":0,"burden":0}';
-  console.log('AI预填请求发送中...');
-  var t = await callAI(p, 300);
-  console.log('AI预填原始返回:', t);
-  try {
-    if (t) {
-      // 尝试提取JSON
-      var match = t.match(/\{[^}]+\}/);
-      var jsonStr = match ? match[0] : t;
-      S.aiDims = JSON.parse(jsonStr);
-      console.log('AI预填解析成功:', S.aiDims);
-    } else {
-      console.log('AI返回为空，使用启发式逻辑');
-      S.aiDims = heuristic();
-    }
-  } catch(e) {
-    console.warn('JSON解析失败，使用启发式逻辑。原文:', t, '错误:', e.message);
-    S.aiDims = heuristic();
-  }
+  var p='你是决策助手。用户描述了一件事：「'+S.eventText+'」\n精力='+S.energy+'，情绪='+S.mood+'\n判断以下维度的选项索引（0起始）：\n'+
+    DIM_DEFS.map(function(d){return d.key+'（'+d.opts.join('/')+'）';}).join('\n')+
+    '\n只返回JSON：{"time":0,"impact":1,"rev":2,"other":0,"cost":2,"block":1,"gain":0,"burden":1}';
+  var t=await callAI(p,200);
+  try{S.aiDims=t?JSON.parse(t):heuristic();}catch(e){S.aiDims=heuristic();}
   goStep(2);
 }
 function heuristic(){
@@ -722,14 +704,9 @@ function step4(c){
 function selAction(ch){S.actionChoice=ch;S.actionTime='';renderStepContent();}
 function selTime(t,el){S.actionTime=t;document.querySelectorAll('.time-slot').forEach(function(x){x.classList.remove('selected');});if(el)el.classList.add('selected');}
 async function subDecision(){
-  var ct=document.getElementById('customTime');
-  if(ct && ct.value && !S.actionTime) S.actionTime = ct.value;
-  if((S.actionChoice==='立即做'||S.actionChoice==='稍后做') && !S.actionTime){
-    alert('请选择一个时间'); return;
-  }
-  // 先归档
+  var ct=document.getElementById('customTime');if(ct&&ct.value&&!S.actionTime)S.actionTime=ct.value;
+  if((S.actionChoice==='立即做'||S.actionChoice==='稍后做')&&!S.actionTime){alert('请选择一个时间');return;}
   await saveToHistory();
-  // 再生成鼓励
   aiEnc();
 }
 async function aiEnc(){
@@ -764,35 +741,20 @@ function step5(c){
 // ── SAVE DECISION ──
 async function saveToHistory(){
   showSync('☁️ 保存中…');
-  var insertData = {
-    user_id: S.user.id,
-    event_text: S.eventText,
-    energy: S.energy,
-    mood: S.mood,
-    dims: S.dims,
-    report: S.reportData,
-    action_choice: S.actionChoice,
-    action_time: S.actionTime
-  };
-  console.log('归档数据:', JSON.stringify(insertData));
-  var {data, error} = await supa.from('decisions').insert(insertData).select().single();
-  if (error) {
-    console.warn('归档失败:', error.message, error.details);
-    showSync('❌ 归档失败：' + error.message);
-    return;
-  }
-  if (data) {
+  var {data,error}=await supa.from('decisions').insert({
+    user_id:S.user.id,
+    event_text:S.eventText,
+    energy:S.energy,mood:S.mood,
+    dims:S.dims,report:S.reportData,
+    action_choice:S.actionChoice,action_time:S.actionTime
+  }).select().single();
+  if(!error&&data){
     S.history.unshift({
-      id: data.id,
-      date: new Date(data.created_at).toLocaleDateString('zh-CN'),
-      event: (data.event_text||'').slice(0,40),
-      action: data.action_choice,
-      time: data.action_time,
-      score: data.report ? data.report.score : '-',
-      verdict: data.report ? data.report.verdict : '-'
+      id:data.id,date:new Date(data.created_at).toLocaleDateString('zh-CN'),
+      event:(data.event_text||'').slice(0,40),action:data.action_choice,
+      time:data.action_time,score:data.report?data.report.score:'-',verdict:data.report?data.report.verdict:'-'
     });
-    console.log('归档成功, id:', data.id);
-    showSync('☁️ 已归档');
+    showSync('☁️ 已同步');
   }
 }
 
@@ -817,28 +779,13 @@ async function callAI(prompt, maxTok) {
         model: 'hunyuan-lite',
         max_tokens: maxTok || 400,
         temperature: 0.3,
-        messages: [{role:'user', content: prompt}]
+        messages: [{role:'user', content:prompt}]
       })
     });
-    if (!res.ok) {
-      console.warn('API响应错误:', res.status, res.statusText);
-      return null;
-    }
     var data = await res.json();
-    console.log('AI完整返回:', JSON.stringify(data));
-    if (data.error) {
-      console.warn('API返回错误:', data.error);
-      return null;
-    }
-    if (!data.choices || !data.choices[0]) {
-      console.warn('API返回格式异常:', data);
-      return null;
-    }
+    if (data.error) return null;
     return data.choices[0].message.content.trim().replace(/```json|```/g,'').trim();
-  } catch(e) {
-    console.warn('callAI异常:', e.message);
-    return null;
-  }
+  } catch(e) { return null; }
 }
 </script>
 </body>
