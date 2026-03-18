@@ -138,8 +138,15 @@ body{background:var(--bg);font-family:var(--font);color:var(--text);min-height:1
 .chip.selected{background:var(--accent-dim);border-color:rgba(91,127,232,0.35);color:var(--accent);font-weight:500;}
 .dim-grid{display:flex;flex-direction:column;gap:8px;}
 .dim-row{background:#fff;border:1px solid var(--border);border-radius:9px;padding:11px 14px;display:flex;align-items:flex-start;gap:12px;}
-.dim-label{font-size:12px;color:var(--text2);width:80px;flex-shrink:0;padding-top:3px;line-height:1.5;}
-.dim-chips{display:flex;gap:5px;flex-wrap:wrap;flex:1;}
+.dim-label{font-size:12px;color:var(--text2);flex-shrink:0;line-height:1.5;font-weight:500;}
+.dim-hint{font-size:11px;color:var(--text3);margin-top:3px;line-height:1.4;}
+.dim-label-wrap{width:90px;flex-shrink:0;padding-top:3px;}
+.dim-right{display:flex;flex-direction:column;gap:6px;flex:1;}
+.dim-chips{display:flex;gap:5px;flex-wrap:wrap;}
+.dim-note-wrap{margin-top:2px;}
+.dim-note{width:100%;padding:5px 9px;border-radius:6px;border:1px solid var(--border);background:var(--bg3);font-family:var(--font);font-size:11px;color:var(--text2);outline:none;transition:border-color .2s;}
+.dim-note:focus{border-color:var(--accent);background:#fff;}
+.dim-note::placeholder{color:var(--text3);}
 .dim-chip{padding:4px 9px;border-radius:5px;font-size:11px;background:var(--bg3);border:1px solid var(--border);color:var(--text2);cursor:pointer;transition:all .15s;}
 .dim-chip:hover{border-color:var(--accent2);color:var(--text);}
 .dim-chip.selected{background:var(--accent-dim);border-color:rgba(91,127,232,0.35);color:var(--accent);font-weight:500;}
@@ -350,7 +357,7 @@ var S = {
   user: null, // { id, username }
   view: 'home', sidebarOpen: false, step: 0, calOffset: 0,
   eventText: '', energy: '普通', mood: '平稳',
-  dims: {}, aiDims: {}, reportData: null,
+  dims: {}, aiDims: {}, dimNotes: {}, reportData: null,
   actionChoice: '', actionTime: '',
   todos: [], history: []
 };
@@ -361,14 +368,13 @@ var STEPS = [
   {id:3,label:'分析报告'},{id:4,label:'最终决策'},{id:5,label:'事后复盘'}
 ];
 var DIM_DEFS = [
-  {key:'time',label:'时间压力',opts:['今天必须完成','本周内要完成','本月内要完成','没有明确截止']},
-  {key:'impact',label:'后果严重性',opts:['严重，影响不可挽回','较大，但还能补救','一般，有点影响','几乎没什么后果']},
-  {key:'rev',label:'可逆性',opts:['错过了就永久消失','有时间窗口但还有几天','随时都能重新来过','不确定']},
-  {key:'other',label:'涉及他人',opts:['有人在等我，今天就要回应','有人在等我，但不急','只影响我自己']},
-  {key:'cost',label:'预估耗时',opts:['15分钟以内','30分钟到1小时','2到4小时','半天以上','需要多天']},
-  {key:'block',label:'连锁阻塞',opts:['卡住好几件事，必须先解决','影响一件事的推进','完全独立，不影响其他']},
-  {key:'gain',label:'做成收益',opts:['工作直接产出','生活更便利','心理满足感','维系或改善关系']},
-  {key:'burden',label:'心理负担',opts:['很重，一直在脑子里转','有点压着，但还好','没什么感觉']}
+  {key:"time",   label:"时间压力",   multi:false, opts:["今天必须完成","本周内要完成","本月内要完成","没有明确截止"],       hint:"截止时间是什么时候？"},
+  {key:"impact", label:"不做的后果", multi:false, opts:["严重且不可挽回","较大但还能补救","一般有点影响","几乎没有后果"], hint:"如果不做这件事，最坏会发生什么？"},
+  {key:"other",  label:"涉及他人",   multi:false, opts:["有人在等我今天就要回应","有人在等我但不急","只影响我自己"],        hint:"有没有人在等你的回应？"},
+  {key:"cost",   label:"预估耗时",   multi:false, opts:["15分钟以内","30分钟到1小时","2到4小时","半天以上","需要多天"],       hint:"完成这件事大概需要多长时间？"},
+  {key:"block",  label:"连锁阻塞",   multi:false, opts:["卡住好几件事必须先解决","影响一件事的推进","完全独立不影响其他"],     hint:"不做这件事会不会卡住其他事情？"},
+  {key:"gain",   label:"做成收益",   multi:true,  opts:["工作直接产出","生活更便利","心理满足感","维系或改善关系"],           hint:"做成这件事你能获得什么？可多选"},
+  {key:"burden", label:"心理负担",   multi:false, opts:["很重一直在脑子里转","有点压着但还好","没什么感觉"],               hint:"这件事压在心里有多重？"}
 ];
 
 // ── SYNC INDICATOR ──
@@ -458,7 +464,7 @@ function switchView(v) {
 
 function startNewDecision() {
   completedSteps=new Set();
-  S.step=0;S.eventText='';S.dims={};S.aiDims={};S.reportData=null;S.actionChoice='';S.actionTime='';
+  S.step=0;S.eventText='';S.dims={};S.aiDims={};S.dimNotes={};S.reportData=null;S.actionChoice='';S.actionTime='';
   switchView('decision');
 }
 
@@ -560,12 +566,47 @@ function renderStepNav(){
 function goStep(n){completedSteps.add(S.step);S.step=n;renderDecision();}
 function mkChip(t,sel){return '<div class="chip'+(sel?' selected':'')+'" onclick="selChip(this)">'+t+'</div>';}
 function selChip(el){el.closest('.chip-row').querySelectorAll('.chip').forEach(function(c){c.classList.remove('selected');});el.classList.add('selected');}
-function mkDimRow(def,si){
-  var chips=def.opts.map(function(o,i){return '<div class="dim-chip'+(i===si?' selected':'')+'" onclick="selDimChip(this)">'+o+'</div>';}).join('');
-  return '<div class="dim-row" data-key="'+def.key+'"><span class="dim-label">'+def.label+'</span><div class="dim-chips">'+chips+'</div></div>';
+function mkDimRow(def, si) {
+  var selectedArr = Array.isArray(si) ? si : (si !== undefined && si !== null ? [si] : []);
+  var chips = def.opts.map(function(o, i) {
+    var isSel = def.multi ? selectedArr.indexOf(i) !== -1 : selectedArr[0] === i;
+    var clickFn = def.multi ? 'selDimChipMulti(this)' : 'selDimChip(this)';
+    return '<div class="dim-chip' + (isSel ? ' selected' : '') + '" onclick="' + clickFn + '">' + o + '</div>';
+  }).join('');
+  var hint = def.hint ? '<div class="dim-hint">' + def.hint + '</div>' : '';
+  var note = '<div class="dim-note-wrap"><input class="dim-note" type="text" placeholder="补充说明（可选）" data-notekey="' + def.key + '" value="' + (S.dimNotes && S.dimNotes[def.key] ? S.dimNotes[def.key] : '') + '"/></div>';
+  return '<div class="dim-row" data-key="' + def.key + '">' +
+    '<div class="dim-label-wrap"><span class="dim-label">' + def.label + '</span>' + hint + '</div>' +
+    '<div class="dim-right"><div class="dim-chips">' + chips + '</div>' + note + '</div>' +
+  '</div>';
 }
-function selDimChip(el){el.closest('.dim-chips').querySelectorAll('.dim-chip').forEach(function(c){c.classList.remove('selected');});el.classList.add('selected');}
-function collectDims(){var r={};document.querySelectorAll('.dim-row[data-key]').forEach(function(row){var k=row.getAttribute('data-key'),s=row.querySelector('.dim-chip.selected');r[k]=s?s.textContent:'';});return r;}
+function selDimChip(el) {
+  el.closest('.dim-chips').querySelectorAll('.dim-chip').forEach(function(c){c.classList.remove('selected');});
+  el.classList.add('selected');
+}
+function selDimChipMulti(el) {
+  el.classList.toggle('selected');
+}
+function collectDims() {
+  if (!S.dimNotes) S.dimNotes = {};
+  document.querySelectorAll('.dim-note[data-notekey]').forEach(function(inp) {
+    S.dimNotes[inp.getAttribute('data-notekey')] = inp.value;
+  });
+  var r = {};
+  document.querySelectorAll('.dim-row[data-key]').forEach(function(row) {
+    var k = row.getAttribute('data-key');
+    var def = DIM_DEFS.find(function(d){ return d.key === k; });
+    if (def && def.multi) {
+      var selected = [];
+      row.querySelectorAll('.dim-chip.selected').forEach(function(c){ selected.push(c.textContent); });
+      r[k] = selected.join('、');
+    } else {
+      var s = row.querySelector('.dim-chip.selected');
+      r[k] = s ? s.textContent : '';
+    }
+  });
+  return r;
+}
 
 function renderStepContent(){
   var c=document.getElementById('stepContent');c.innerHTML='';
@@ -605,11 +646,28 @@ function step1(c){
     '<div class="ai-loading"><div class="dot-pulse"><span></span><span></span><span></span></div><span>正在理解事件背景</span></div>';
 }
 async function aiPredict(){
-  var p='你是决策助手。用户描述了一件事：「'+S.eventText+'」\n精力='+S.energy+'，情绪='+S.mood+'\n判断以下维度的选项索引（0起始）：\n'+
-    DIM_DEFS.map(function(d){return d.key+'（'+d.opts.join('/')+'）';}).join('\n')+
-    '\n只返回JSON：{"time":0,"impact":1,"rev":2,"other":0,"cost":2,"block":1,"gain":0,"burden":1}';
-  var t=await callAI(p,200);
-  try{S.aiDims=t?JSON.parse(t):heuristic();}catch(e){S.aiDims=heuristic();}
+  var dimDesc = DIM_DEFS.map(function(d,i){
+    return i+'. '+d.key+'（'+d.label+'）'+(d.multi?'【可多选】':'')+'的选项：'+d.opts.map(function(o,j){return j+'='+o;}).join('，');
+  }).join('\n');
+  var p = '你是一个决策分析助手。\n用户描述的事件：「'+S.eventText+'」\n用户当前精力：'+S.energy+'，情绪：'+S.mood+'\n\n请根据事件内容，判断以下每个维度最合适的选项索引（从0开始）。多选维度请返回数组：\n'+dimDesc+
+    '\n\n请只返回一个JSON对象，不要有任何解释或其他文字。格式如下（gain为多选示例）：\n{"time":0,"impact":1,"other":2,"cost":1,"block":2,"gain":[0,2],"burden":1}';
+  console.log('AI预填请求发送中...');
+  var t = await callAI(p, 300);
+  console.log('AI预填原始返回:', t);
+  try {
+    if (t) {
+      var match = t.match(/\{[\s\S]*\}/);
+      var jsonStr = match ? match[0] : t;
+      S.aiDims = JSON.parse(jsonStr);
+      console.log('AI预填解析成功:', S.aiDims);
+    } else {
+      console.log('AI返回为空，使用启发式逻辑');
+      S.aiDims = heuristic();
+    }
+  } catch(e) {
+    console.warn('JSON解析失败，使用启发式逻辑。原文:', t, '错误:', e.message);
+    S.aiDims = heuristic();
+  }
   goStep(2);
 }
 function heuristic(){
@@ -623,7 +681,18 @@ function heuristic(){
 
 // STEP 2
 function step2(c){
-  var rows=DIM_DEFS.map(function(def){var si=(S.dims[def.key]!==undefined)?S.dims[def.key]:(S.aiDims[def.key]||0);return mkDimRow(def,si);}).join('');
+  if (!S.dimNotes) S.dimNotes = {};
+  var rows=DIM_DEFS.map(function(def){
+    var raw = (S.dims[def.key]!==undefined) ? S.dims[def.key] : (S.aiDims[def.key] !== undefined ? S.aiDims[def.key] : 0);
+    // For multi-select, AI returns array of indices; for single, it returns a number
+    var si;
+    if (def.multi) {
+      si = Array.isArray(raw) ? raw : (raw !== undefined ? [raw] : []);
+    } else {
+      si = typeof raw === 'number' ? raw : 0;
+    }
+    return mkDimRow(def, si);
+  }).join('');
   c.innerHTML='<div class="step-heading">检查并修正<span class="ai-badge">AI已预填</span></div>'+
     '<div class="step-sub">AI根据描述自动判断，逐项确认，不对就点击修改。</div>'+
     '<div class="dim-grid">'+rows+'</div>'+
@@ -639,8 +708,12 @@ function step3(c){
     '<div class="ai-loading"><div class="dot-pulse"><span></span><span></span><span></span></div><span>正在生成深度分析</span></div>';
 }
 async function aiReport(){
-  var dd=DIM_DEFS.map(function(def){var v=S.dims[def.key],i=typeof v==='number'?v:def.opts.indexOf(v);return def.label+'：'+(i>=0?def.opts[i]:v||'未知');}).join('\n');
-  var p='你是决策分析助手。\n事件：'+S.eventText+'\n精力：'+S.energy+'，情绪：'+S.mood+'\n八个维度：\n'+dd+
+  var dd=DIM_DEFS.map(function(def){
+    var v=S.dims[def.key];
+    var note = S.dimNotes && S.dimNotes[def.key] ? '（补充：'+S.dimNotes[def.key]+'）' : '';
+    return def.label+'：'+(v||'未填')+note;
+  }).join('\n');
+  var p='你是决策分析助手。\n事件：'+S.eventText+'\n精力：'+S.energy+'，情绪：'+S.mood+'\n七个维度评估：\n'+dd+
     '\n返回JSON（不要其他内容）：{"score":0-100,"verdict":"立刻处理或计划处理或暂时搁置","verdict_level":"high或mid或low","summary":"20字内事件本质","reasons":["结合维度的理由1（30字内）","理由2","理由3"],"risks":["风险1（25字内）","风险2"],"timing":"35字内时机建议","approach":"35字内执行建议"}';
   var t=await callAI(p,600);
   try{S.reportData=t?JSON.parse(t):fbReport();}catch(e){S.reportData=fbReport();}
@@ -669,11 +742,20 @@ function renderReport(c,r){
     '<div class="next-btn-row"><button class="next-btn" onclick="goStep(4)">做出决策 →</button></div>';
 }
 function makeRadar(){
-  var keys=['time','impact','rev','other','cost','block','gain','burden'],labels=['时间','后果','可逆','他人','耗时','阻塞','收益','负担'];
-  var sm={time:[1,.7,.45,.2],impact:[1,.7,.4,.15],rev:[.9,.65,.2,.4],other:[.9,.55,.2],cost:[.3,.5,.75,.9,1],block:[1,.6,.1],gain:[.9,.65,.75,.8],burden:[.95,.6,.15]};
+  var keys=['time','impact','other','cost','block','gain','burden'],labels=['时间','后果','他人','耗时','阻塞','收益','负担'];
+  var sm={time:[1,.7,.45,.2],impact:[1,.7,.4,.15],other:[.9,.55,.2],cost:[.3,.5,.75,.9,1],block:[1,.6,.1],gain:[.9,.65,.75,.8],burden:[.95,.6,.15]};
   var dd={};DIM_DEFS.forEach(function(d){dd[d.key]=d;});
-  var vals=keys.map(function(k){var def=dd[k];if(!def)return.5;var raw=S.dims[k],idx=typeof raw==='number'?raw:def.opts.indexOf(raw);if(idx<0)idx=0;var sc=sm[k]||[];return sc[idx]!==undefined?sc[idx]:.5;});
-  var cx=75,cy=75,r=55,n=8,svg='';
+  var vals=keys.map(function(k){
+    var def=dd[k];if(!def)return.5;
+    var raw=S.dims[k];
+    if(def.multi){
+      // multi: score based on count of selections
+      return raw ? Math.min(1, (raw.split('、').length) * 0.3 + 0.4) : 0.4;
+    }
+    var idx=def.opts.indexOf(raw);if(idx<0)idx=0;
+    var sc=sm[k]||[];return sc[idx]!==undefined?sc[idx]:.5;
+  });
+  var cx=75,cy=75,r=55,n=7,svg='';
   [.25,.5,.75,1].forEach(function(rr){var pts=[];for(var i=0;i<n;i++){var a=(Math.PI*2/n)*i-Math.PI/2;pts.push((cx+Math.cos(a)*r*rr).toFixed(1)+','+(cy+Math.sin(a)*r*rr).toFixed(1));}svg+='<polygon points="'+pts.join(' ')+'" fill="none" stroke="rgba(99,120,210,0.13)" stroke-width="0.8"/>';});
   for(var i=0;i<n;i++){var a=(Math.PI*2/n)*i-Math.PI/2;svg+='<line x1="'+cx+'" y1="'+cy+'" x2="'+(cx+Math.cos(a)*r).toFixed(1)+'" y2="'+(cy+Math.sin(a)*r).toFixed(1)+'" stroke="rgba(99,120,210,0.09)" stroke-width="0.8"/>';}
   var dp=[];for(var i=0;i<n;i++){var a=(Math.PI*2/n)*i-Math.PI/2;dp.push((cx+Math.cos(a)*r*vals[i]).toFixed(1)+','+(cy+Math.sin(a)*r*vals[i]).toFixed(1));}
@@ -704,9 +786,14 @@ function step4(c){
 function selAction(ch){S.actionChoice=ch;S.actionTime='';renderStepContent();}
 function selTime(t,el){S.actionTime=t;document.querySelectorAll('.time-slot').forEach(function(x){x.classList.remove('selected');});if(el)el.classList.add('selected');}
 async function subDecision(){
-  var ct=document.getElementById('customTime');if(ct&&ct.value&&!S.actionTime)S.actionTime=ct.value;
-  if((S.actionChoice==='立即做'||S.actionChoice==='稍后做')&&!S.actionTime){alert('请选择一个时间');return;}
+  var ct=document.getElementById('customTime');
+  if(ct && ct.value && !S.actionTime) S.actionTime = ct.value;
+  if((S.actionChoice==='立即做'||S.actionChoice==='稍后做') && !S.actionTime){
+    alert('请选择一个时间'); return;
+  }
+  // 先归档
   await saveToHistory();
+  // 再生成鼓励
   aiEnc();
 }
 async function aiEnc(){
@@ -741,20 +828,35 @@ function step5(c){
 // ── SAVE DECISION ──
 async function saveToHistory(){
   showSync('☁️ 保存中…');
-  var {data,error}=await supa.from('decisions').insert({
-    user_id:S.user.id,
-    event_text:S.eventText,
-    energy:S.energy,mood:S.mood,
-    dims:S.dims,report:S.reportData,
-    action_choice:S.actionChoice,action_time:S.actionTime
-  }).select().single();
-  if(!error&&data){
+  var insertData = {
+    user_id: S.user.id,
+    event_text: S.eventText,
+    energy: S.energy,
+    mood: S.mood,
+    dims: S.dims,
+    report: S.reportData,
+    action_choice: S.actionChoice,
+    action_time: S.actionTime
+  };
+  console.log('归档数据:', JSON.stringify(insertData));
+  var {data, error} = await supa.from('decisions').insert(insertData).select().single();
+  if (error) {
+    console.warn('归档失败:', error.message, error.details);
+    showSync('❌ 归档失败：' + error.message);
+    return;
+  }
+  if (data) {
     S.history.unshift({
-      id:data.id,date:new Date(data.created_at).toLocaleDateString('zh-CN'),
-      event:(data.event_text||'').slice(0,40),action:data.action_choice,
-      time:data.action_time,score:data.report?data.report.score:'-',verdict:data.report?data.report.verdict:'-'
+      id: data.id,
+      date: new Date(data.created_at).toLocaleDateString('zh-CN'),
+      event: (data.event_text||'').slice(0,40),
+      action: data.action_choice,
+      time: data.action_time,
+      score: data.report ? data.report.score : '-',
+      verdict: data.report ? data.report.verdict : '-'
     });
-    showSync('☁️ 已同步');
+    console.log('归档成功, id:', data.id);
+    showSync('☁️ 已归档');
   }
 }
 
@@ -779,13 +881,28 @@ async function callAI(prompt, maxTok) {
         model: 'hunyuan-lite',
         max_tokens: maxTok || 400,
         temperature: 0.3,
-        messages: [{role:'user', content:prompt}]
+        messages: [{role:'user', content: prompt}]
       })
     });
+    if (!res.ok) {
+      console.warn('API响应错误:', res.status, res.statusText);
+      return null;
+    }
     var data = await res.json();
-    if (data.error) return null;
+    console.log('AI完整返回:', JSON.stringify(data));
+    if (data.error) {
+      console.warn('API返回错误:', data.error);
+      return null;
+    }
+    if (!data.choices || !data.choices[0]) {
+      console.warn('API返回格式异常:', data);
+      return null;
+    }
     return data.choices[0].message.content.trim().replace(/```json|```/g,'').trim();
-  } catch(e) { return null; }
+  } catch(e) {
+    console.warn('callAI异常:', e.message);
+    return null;
+  }
 }
 </script>
 </body>
