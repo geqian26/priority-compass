@@ -221,6 +221,14 @@ body{background:var(--bg);font-family:var(--font);color:var(--text);min-height:1
 .next-btn{padding:9px 22px;background:var(--accent);border:none;border-radius:8px;color:#fff;font-family:var(--font);font-size:13px;cursor:pointer;font-weight:500;}
 .next-btn:hover{opacity:.86;}
 .ai-loading{display:flex;align-items:center;gap:10px;color:var(--text2);font-size:13px;padding:20px 0;}
+.mic-wrap{position:relative;margin-top:8px;display:flex;align-items:center;gap:8px;}
+.mic-btn{width:44px;height:44px;border-radius:50%;background:var(--accent-dim);border:1.5px solid rgba(91,127,232,0.3);cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .15s;user-select:none;-webkit-user-select:none;}
+.mic-btn:hover{background:rgba(91,127,232,0.18);}
+.mic-btn.listening{background:var(--danger);border-color:var(--danger);animation:micPulse 0.8s ease-in-out infinite;}
+.mic-btn.unsupported{display:none;}
+@keyframes micPulse{0%,100%{box-shadow:0 0 0 0 rgba(224,85,85,0.4)}50%{box-shadow:0 0 0 8px rgba(224,85,85,0)}}
+.mic-status{font-size:12px;color:var(--text3);transition:color .2s;}
+.mic-status.listening{color:var(--danger);font-weight:500;}
 .dot-pulse{display:flex;gap:5px;}
 .dot-pulse span{width:6px;height:6px;border-radius:50%;background:var(--accent);animation:dp 1.2s infinite ease-in-out;}
 .dot-pulse span:nth-child(2){animation-delay:.2s;}
@@ -314,6 +322,34 @@ body{background:var(--bg);font-family:var(--font);color:var(--text);min-height:1
 /* 紧急待办标记 */
 .urgent-flag{display:inline-flex;align-items:center;gap:4px;font-size:10px;font-family:var(--mono);padding:2px 7px;border-radius:4px;}
 .urgent-flag.high{background:rgba(224,85,85,0.12);color:var(--danger);}
+.compare-btn{width:100%;padding:11px;background:var(--bg3);border:1.5px dashed var(--border2);border-radius:10px;color:var(--text2);font-family:var(--font);font-size:13px;cursor:pointer;transition:all .15s;margin-top:8px;}
+.compare-btn:hover{border-color:var(--accent2);color:var(--accent);background:var(--accent-dim);}
+.compare-panel{background:#fff;border:1px solid var(--border);border-radius:12px;padding:16px;margin-top:10px;display:none;}
+.compare-panel.visible{display:block;}
+.compare-panel-title{font-size:13px;font-weight:500;color:var(--text);margin-bottom:10px;}
+.compare-list{display:flex;flex-direction:column;gap:6px;max-height:200px;overflow-y:auto;margin-bottom:12px;}
+.compare-list::-webkit-scrollbar{width:3px;}
+.compare-list::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px;}
+.compare-item{display:flex;align-items:center;gap:10px;padding:9px 12px;background:var(--bg3);border:1px solid var(--border);border-radius:8px;cursor:pointer;transition:all .15s;}
+.compare-item:hover{border-color:var(--accent2);}
+.compare-item.selected{background:var(--accent-dim);border-color:rgba(91,127,232,0.35);}
+.compare-item-text{flex:1;font-size:13px;color:var(--text);}
+.compare-item-score{font-size:11px;font-family:var(--mono);color:var(--accent);background:var(--accent-dim);padding:2px 7px;border-radius:4px;flex-shrink:0;}
+.compare-item-check{width:16px;height:16px;border-radius:4px;border:1.5px solid var(--border2);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:10px;}
+.compare-item.selected .compare-item-check{background:var(--accent);border-color:var(--accent);color:#fff;}
+.compare-run-btn{width:100%;padding:9px;background:var(--accent);border:none;border-radius:8px;color:#fff;font-family:var(--font);font-size:13px;cursor:pointer;font-weight:500;}
+.compare-run-btn:hover{opacity:.86;}
+.compare-result{background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:14px;margin-top:12px;}
+.compare-result-title{font-size:11px;color:var(--text3);letter-spacing:.8px;text-transform:uppercase;margin-bottom:10px;}
+.compare-rank-item{display:flex;align-items:center;gap:10px;padding:9px 12px;background:#fff;border:1px solid var(--border);border-radius:8px;margin-bottom:6px;}
+.compare-rank-num{width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;font-family:var(--mono);flex-shrink:0;}
+.compare-rank-num.rank1{background:rgba(224,85,85,0.12);color:var(--danger);}
+.compare-rank-num.rank2{background:rgba(240,160,48,0.12);color:var(--warn);}
+.compare-rank-num.rank3{background:rgba(91,127,232,0.12);color:var(--accent);}
+.compare-rank-num.rankn{background:var(--bg3);color:var(--text3);}
+.compare-rank-text{flex:1;font-size:13px;color:var(--text);}
+.compare-rank-score{font-size:12px;font-family:var(--mono);color:var(--text2);}
+.compare-ai-note{font-size:13px;color:var(--text2);line-height:1.7;margin-top:10px;padding-top:10px;border-top:1px solid var(--border);}
 </style>
 </head>
 <body>
@@ -620,6 +656,65 @@ const SUPA_KEY = 'sb_publishable_p1q_xvbLYLYAfKcYFy4xKA_-Dkhgz-s';
 const supa = supabase.createClient(SUPA_URL, SUPA_KEY);
 
 // ── STATE ──
+// ── VOICE RECOGNITION ──
+var voiceRecognition = null;
+var voiceSupported = !!(window.SpeechRecognition || window.webkitSpeechRecognition);
+
+function initVoice() {
+  if (!voiceSupported) return;
+  var SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  voiceRecognition = new SpeechRecognition();
+  voiceRecognition.lang = 'zh-CN';
+  voiceRecognition.continuous = true;
+  voiceRecognition.interimResults = true;
+  voiceRecognition.onresult = function(e) {
+    var interim = '', final = '';
+    for (var i = e.resultIndex; i < e.results.length; i++) {
+      if (e.results[i].isFinal) final += e.results[i][0].transcript;
+      else interim += e.results[i][0].transcript;
+    }
+    var textarea = document.getElementById('evIn');
+    if (!textarea) return;
+    // Show interim in a preview span
+    var preview = document.getElementById('voicePreview');
+    if (preview) preview.textContent = interim ? '「' + interim + '」' : '';
+    // Append final text
+    if (final) {
+      textarea.value = (textarea.value + final).trim();
+      if (preview) preview.textContent = '';
+    }
+  };
+  voiceRecognition.onerror = function(e) {
+    console.warn('Voice error:', e.error);
+    stopVoice();
+  };
+  voiceRecognition.onend = function() {
+    stopVoice();
+  };
+}
+
+function startVoice() {
+  if (!voiceSupported || !voiceRecognition) return;
+  try {
+    voiceRecognition.start();
+    var btn = document.getElementById('micBtn');
+    var status = document.getElementById('micStatus');
+    if (btn) btn.classList.add('listening');
+    if (status) { status.textContent = '正在聆听…'; status.classList.add('listening'); }
+  } catch(e) { console.warn('Voice start error:', e); }
+}
+
+function stopVoice() {
+  if (!voiceSupported || !voiceRecognition) return;
+  try { voiceRecognition.stop(); } catch(e) {}
+  var btn = document.getElementById('micBtn');
+  var status = document.getElementById('micStatus');
+  var preview = document.getElementById('voicePreview');
+  if (btn) btn.classList.remove('listening');
+  if (status) { status.textContent = '按住说话'; status.classList.remove('listening'); }
+  if (preview) preview.textContent = '';
+}
+
 // ── MODE ──
 var appMode = localStorage.getItem('compass_mode') || 'gentle';
 
@@ -816,9 +911,103 @@ function closeHype() {
   document.getElementById('hypeOverlay').classList.remove('visible');
 }
 
+// ── COMPARE FUNCTION ──
+var selectedCompareIds = new Set();
+
+function toggleCompare() {
+  var panel = document.getElementById('comparePanel');
+  if (!panel) return;
+  panel.classList.toggle('visible');
+  if (panel.classList.contains('visible')) renderCompareList();
+}
+
+function renderCompareList() {
+  var list = document.getElementById('compareList');
+  if (!list) return;
+  var others = S.history.filter(function(h) {
+    return !S.lastDecisionId || String(h.id) !== String(S.lastDecisionId);
+  });
+  if (!others.length) {
+    list.innerHTML = '<div style="color:var(--text3);font-size:12px;padding:8px 0">暂无其他决策记录可对比</div>';
+    return;
+  }
+  list.innerHTML = others.map(function(h) {
+    var isSel = selectedCompareIds.has(String(h.id));
+    var checkMark = isSel ? '✓' : '';
+    var selClass = isSel ? ' selected' : '';
+    return '<div class="compare-item'+selClass+'" data-compare-id="'+h.id+'" onclick="toggleCompareItem(this)">'+
+      '<div class="compare-item-check">'+checkMark+'</div>'+
+      '<div class="compare-item-text">'+h.event+'</div>'+
+      '<div class="compare-item-score">'+h.score+'分</div>'+
+    '</div>';
+  }).join('');
+}
+
+function toggleCompareItem(el) {
+  var id = String(el.getAttribute('data-compare-id'));
+  if (selectedCompareIds.has(id)) selectedCompareIds.delete(id);
+  else selectedCompareIds.add(id);
+  renderCompareList();
+}
+
+async function runCompare() {
+  if (!selectedCompareIds.size) { alert('请选择至少一个事项'); return; }
+  var btn = document.querySelector('.compare-run-btn');
+  if (btn) { btn.textContent = 'AI 分析中…'; btn.disabled = true; }
+  var current = {
+    event: S.eventText,
+    score: S.reportData ? S.reportData.score : 0,
+    verdict: S.reportData ? S.reportData.verdict : '',
+    action: S.actionChoice
+  };
+  var others = S.history.filter(function(h) { return selectedCompareIds.has(String(h.id)); });
+  var allItems = [current].concat(others.map(function(h) {
+    return { event: h.event, score: h.score, verdict: h.verdict, action: h.action };
+  }));
+  var itemsDesc = allItems.map(function(item, i) {
+    return (i===0?'【当前事项】':'【事项'+(i+1)+'】')+
+      ' 事件：'+item.event+' 评分：'+item.score+'分 AI建议：'+item.verdict+
+      (item.action?' 用户决策：'+item.action:'');
+  }).join(' | ');
+  var prompt = '你是优先级排序助手。用户有以下事项需要排序：'+itemsDesc+
+    ' 请综合分析给出优先级排序和理由。'+
+    '返回JSON：{"ranking":[{"rank":1,"event":"事件简述","score":分数,"reason":"理由（20字内）"},...],"summary":"综合建议（40字内）"}';
+  var result = await callAI(prompt, 800);
+  var rankData = null;
+  try {
+    if (result) {
+      var match = result.match(/\{[\s\S]*\}/);
+      rankData = match ? JSON.parse(match[0]) : null;
+    }
+  } catch(e) { console.warn('Compare parse error:', e); }
+  if (btn) { btn.textContent = '重新对比'; btn.disabled = false; }
+  var resultEl = document.getElementById('compareResult');
+  if (!resultEl) return;
+  resultEl.style.display = 'block';
+  if (!rankData) {
+    resultEl.innerHTML = '<div style="color:var(--text3);font-size:13px">分析失败，请重试</div>';
+    return;
+  }
+  var rankClasses = ['rank1','rank2','rank3','rankn'];
+  var rankLabels = ['\ud83e\udd47','\ud83e\udd48','\ud83e\udd49'];
+  resultEl.innerHTML =
+    '<div class="compare-result-title">优先级排序</div>'+
+    (rankData.ranking||[]).map(function(item, i) {
+      var cls = rankClasses[Math.min(i,3)];
+      var lbl = i < 3 ? rankLabels[i] : (i+1)+'';
+      return '<div class="compare-rank-item">'+
+        '<div class="compare-rank-num '+cls+'">'+lbl+'</div>'+
+        '<div class="compare-rank-text">'+item.event+'</div>'+
+        '<div class="compare-rank-score">'+item.score+'分</div>'+
+      '</div>'+
+      '<div style="font-size:11px;color:var(--text3);padding:2px 12px 6px">'+item.reason+'</div>';
+    }).join('')+
+    '<div class="compare-ai-note">'+(rankData.summary||'')+'</div>';
+}
+
 var S = {
   user: null, // { id, username }
-  view: 'home', sidebarOpen: false, step: 0, calOffset: 0, calSelectedDate: null, pendingToast: null,
+  view: 'home', sidebarOpen: false, step: 0, calOffset: 0, calSelectedDate: null, pendingToast: null, lastDecisionId: null,
   eventText: '', energy: '普通', mood: '平稳',
   dims: {}, aiDims: {}, dimNotes: {}, reportData: null,
   actionChoice: '', actionTime: '',
@@ -875,6 +1064,7 @@ async function doLogin() {
     var h = new Date().getHours();
     document.getElementById('homeGreeting').textContent = (h<12?'早上好':h<18?'下午好':'晚上好') + '，' + n;
     await loadAllData();
+    initVoice();
     switchView('home');
   } catch(e) {
     btn.textContent = '进入决策舱'; btn.style.opacity = '1';
@@ -1175,9 +1365,27 @@ function renderStepContent(){
 
 // STEP 0
 function step0(c){
-  c.innerHTML='<div class="step-heading">现在发生了什么？</div>'+
+  var micHtml = voiceSupported ?
+    '<div class="mic-wrap">'+
+      '<button class="mic-btn" id="micBtn" '+
+        'onmousedown="startVoice()" onmouseup="stopVoice()" onmouseleave="stopVoice()" '+
+        'ontouchstart="event.preventDefault();startVoice()" ontouchend="event.preventDefault();stopVoice()" '+
+        'title="按住说话">'+
+        '<svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5">'+
+          '<rect x="7" y="2" width="6" height="10" rx="3"/>'+
+          '<path d="M4 10a6 6 0 0012 0"/><line x1="10" y1="16" x2="10" y2="19"/>'+
+          '<line x1="7" y1="19" x2="13" y2="19"/>'+
+        '</svg>'+
+      '</button>'+
+      '<span class="mic-status" id="micStatus">按住说话</span>'+
+      '<span id="voicePreview" style="font-size:12px;color:var(--accent);font-style:italic;"></span>'+
+    '</div>' : '';
+
+  c.innerHTML=
+    '<div class="step-heading">现在发生了什么？</div>'+
     '<div class="step-sub">用1-3句话自然描述这件事，不需要整理思路，直接说。</div>'+
     '<textarea class="input-area" id="evIn" placeholder="比如：老板刚发来消息说明天上午要看我的方案，但我今晚约好了朋友……" rows="4">'+(S.eventText||'')+'</textarea>'+
+    micHtml+
     '<div class="status-row">'+
       '<div class="status-group"><div class="status-label">精力</div><div class="chip-row">'+
         mkChip('满血',S.energy==='满血')+mkChip('普通',S.energy!=='满血'&&S.energy!=='疲惫')+mkChip('疲惫',S.energy==='疲惫')+
@@ -1512,8 +1720,22 @@ function showEnc(enc){
   var area=document.getElementById('encArea');if(!area)return;
   var icons={'立即做':'🎯','稍后做':'📅','仅存档':'🗂'};
   S.pendingToast = '✨ ' + enc.encourage + '  💡 ' + enc.tip;
-  area.innerHTML='<div class="encourage-box"><div class="encourage-icon">'+(icons[S.actionChoice]||'✨')+'</div><div class="encourage-text">'+enc.encourage+'</div><div class="encourage-sub">小提示：'+enc.tip+'</div></div>'+
+  var hasHistory = S.history.length > 1;
+  area.innerHTML=
+    '<div class="encourage-box"><div class="encourage-icon">'+(icons[S.actionChoice]||'✨')+'</div><div class="encourage-text">'+enc.encourage+'</div><div class="encourage-sub">小提示：'+enc.tip+'</div></div>'+
+    (hasHistory ?
+      '<button class="compare-btn" onclick="toggleCompare()">⚖️ 与其他事项对比优先级</button>'+
+      '<div class="compare-panel" id="comparePanel">'+
+        '<div class="compare-panel-title">选择要对比的事项（可多选）</div>'+
+        '<div class="compare-list" id="compareList"></div>'+
+        '<button class="compare-run-btn" onclick="runCompare()">AI 综合排序</button>'+
+        '<div class="compare-result" id="compareResult" style="display:none"></div>'+
+      '</div>' : '')+
     '<div class="btn-row"><button class="btn btn-primary" onclick="switchView(\'review\')">记录复盘</button><button class="btn btn-ghost" onclick="startNewDecision()">新的决策</button><button class="btn btn-ghost" onclick="goHomeWithToast()">回到首页</button></div>';
+
+  // Show compare result container when runCompare is done
+  var origRunCompare = runCompare;
+  window._compareResultShown = false;
 }
 
 // STEP 5
@@ -1549,6 +1771,7 @@ async function saveToHistory(){
     return;
   }
   if (data) {
+    S.lastDecisionId = data.id;
     S.history.unshift({
       id: data.id,
       date: new Date(data.created_at).toLocaleDateString('zh-CN'),
