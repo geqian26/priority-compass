@@ -665,22 +665,22 @@ function initVoice() {
   var SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
   voiceRecognition = new SpeechRecognition();
   voiceRecognition.lang = 'zh-CN';
-  voiceRecognition.continuous = true;
+  voiceRecognition.continuous = false;
   voiceRecognition.interimResults = true;
   voiceRecognition.onresult = function(e) {
     var interim = '', final = '';
-    for (var i = e.resultIndex; i < e.results.length; i++) {
+    for (var i = 0; i < e.results.length; i++) {
       if (e.results[i].isFinal) final += e.results[i][0].transcript;
       else interim += e.results[i][0].transcript;
     }
     var textarea = document.getElementById('evIn');
     if (!textarea) return;
-    // Show interim in a preview span
     var preview = document.getElementById('voicePreview');
+    // Show interim as preview
     if (preview) preview.textContent = interim ? '「' + interim + '」' : '';
-    // Append final text
+    // Write final immediately
     if (final) {
-      textarea.value = (textarea.value + final).trim();
+      textarea.value = (textarea.value ? textarea.value + ' ' : '') + final;
       if (preview) preview.textContent = '';
     }
   };
@@ -689,31 +689,58 @@ function initVoice() {
     stopVoice();
   };
   voiceRecognition.onend = function() {
-    stopVoice();
+    // Flush any interim text when recognition ends
+    var preview = document.getElementById('voicePreview');
+    var textarea = document.getElementById('evIn');
+    if (preview && preview.textContent && textarea) {
+      var interimText = preview.textContent.replace(/^「|」$/g, '').trim();
+      if (interimText) {
+        textarea.value = (textarea.value ? textarea.value + ' ' : '') + interimText;
+      }
+      preview.textContent = '';
+    }
+    var btn = document.getElementById('micBtn');
+    var status = document.getElementById('micStatus');
+    if (btn) btn.classList.remove('listening');
+    if (status) { status.textContent = '按住说话'; status.classList.remove('listening'); }
   };
 }
 
 function startVoice() {
-  if (!voiceSupported || !voiceRecognition) return;
+  if (!voiceSupported) { initVoice(); }
+  if (!voiceRecognition) return;
   try {
     voiceRecognition.start();
     var btn = document.getElementById('micBtn');
     var status = document.getElementById('micStatus');
     if (btn) btn.classList.add('listening');
     if (status) { status.textContent = '正在聆听…'; status.classList.add('listening'); }
-  } catch(e) { console.warn('Voice start error:', e); }
+  } catch(e) {
+    // If already started, stop and restart
+    try { voiceRecognition.stop(); } catch(e2) {}
+    setTimeout(function(){ startVoice(); }, 200);
+  }
 }
 
 function stopVoice() {
-  if (!voiceSupported || !voiceRecognition) return;
+  if (!voiceRecognition) return;
   try { voiceRecognition.stop(); } catch(e) {}
+  // Flush interim immediately on stop
+  var preview = document.getElementById('voicePreview');
+  var textarea = document.getElementById('evIn');
+  if (preview && preview.textContent && textarea) {
+    var interimText = preview.textContent.replace(/^「|」$/g, '').trim();
+    if (interimText) {
+      textarea.value = (textarea.value ? textarea.value + ' ' : '') + interimText;
+    }
+    preview.textContent = '';
+  }
   var btn = document.getElementById('micBtn');
   var status = document.getElementById('micStatus');
-  var preview = document.getElementById('voicePreview');
   if (btn) btn.classList.remove('listening');
   if (status) { status.textContent = '按住说话'; status.classList.remove('listening'); }
-  if (preview) preview.textContent = '';
 }
+
 
 // ── MODE ──
 var appMode = localStorage.getItem('compass_mode') || 'gentle';
