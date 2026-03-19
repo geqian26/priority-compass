@@ -1079,7 +1079,7 @@ async function loadAllData() {
     supa.from('todos').select('*').eq('user_id', uid).order('created_at', {ascending: true}),
     supa.from('decisions').select('*').eq('user_id', uid).order('created_at', {ascending: false})
   ]);
-  S.todos = (todosRes.data || []).map(function(t){ return {id:t.id,text:t.text,done:t.done,pri:t.priority}; });
+  S.todos = (todosRes.data || []).map(function(t){ return {id:t.id,text:t.text,done:t.done,pri:t.priority,scheduledDate:t.scheduled_date||null}; });
   S.history = (historyRes.data || []).map(function(d){ return {
     id:d.id, date:new Date(d.created_at).toLocaleDateString('zh-CN'),
     event:(d.event_text||'').slice(0,40), action:d.action_choice,
@@ -1215,7 +1215,20 @@ function renderTodos() {
     decSection.innerHTML = '';
   }
 
-  var pend=S.todos.filter(function(t){return!t.done;}),done=S.todos.filter(function(t){return t.done;});
+  // Filter by selected calendar date if set
+  var filterDate = null;
+  if (S.calSelectedDate) {
+    var cd = S.calSelectedDate;
+    filterDate = cd.getFullYear()+'-'+String(cd.getMonth()+1).padStart(2,'0')+'-'+String(cd.getDate()).padStart(2,'0');
+  } else {
+    var nd = new Date();
+    filterDate = nd.getFullYear()+'-'+String(nd.getMonth()+1).padStart(2,'0')+'-'+String(nd.getDate()).padStart(2,'0');
+  }
+  var filteredTodos = S.todos.filter(function(t){
+    if (!t.scheduledDate) return !S.calSelectedDate; // unscheduled only show on today view
+    return t.scheduledDate === filterDate;
+  });
+  var pend=filteredTodos.filter(function(t){return!t.done;}),done=filteredTodos.filter(function(t){return t.done;});
   list.innerHTML=pend.length?pend.map(mkTodoHTML).join(''):'<div style="color:var(--text3);font-size:12px;padding:8px 0">暂无待办，点击上方添加</div>';
   lb.style.display=done.length?'block':'none';
   dl.innerHTML=done.map(mkTodoHTML).join('');
@@ -1265,11 +1278,17 @@ function renderCal(){
     var hd=new Date(h.date.replace(/\//g,'-'));
     return hd.getFullYear()===d.getFullYear()&&hd.getMonth()===d.getMonth();
   }).map(function(h){return new Date(h.date.replace(/\//g,'-')).getDate();});
+  // Also mark days with scheduled todos
+  var todoDays=S.todos.filter(function(t){
+    if(!t.scheduledDate) return false;
+    var td=new Date(t.scheduledDate);
+    return td.getFullYear()===d.getFullYear()&&td.getMonth()===d.getMonth();
+  }).map(function(t){return new Date(t.scheduledDate).getDate();});
   for(var i=0;i<first;i++){var e=document.createElement('div');e.className='cal-day other-month';e.textContent=prev-first+i+1;g.appendChild(e);}
   for(var i=1;i<=dim;i++){
     var e=document.createElement('div'); e.className='cal-day';
     if(S.calOffset===0&&i===today.getDate()) e.classList.add('today');
-    if(decDays.includes(i)) e.classList.add('has-event');
+    if(decDays.includes(i)||todoDays.includes(i)) e.classList.add('has-event');
     e.textContent=i;
     // Click: jump to todo view filtered by this date
     (function(day){
@@ -1723,6 +1742,9 @@ function showEnc(enc){
   var hasHistory = S.history.length > 1;
   area.innerHTML=
     '<div class="encourage-box"><div class="encourage-icon">'+(icons[S.actionChoice]||'✨')+'</div><div class="encourage-text">'+enc.encourage+'</div><div class="encourage-sub">小提示：'+enc.tip+'</div></div>'+
+    '<div id="todoAddedToast" style="display:none;align-items:center;gap:8px;background:rgba(61,189,125,0.12);border:1px solid rgba(61,189,125,0.3);border-radius:9px;padding:10px 14px;font-size:13px;color:var(--success);margin-bottom:8px;">'+
+      '<span>✅ 已自动加入待办清单</span>'+
+    '</div>'+
     (hasHistory ?
       '<button class="compare-btn" onclick="toggleCompare()">⚖️ 与其他事项对比优先级</button>'+
       '<div class="compare-panel" id="comparePanel">'+
@@ -1784,6 +1806,90 @@ async function saveToHistory(){
     });
     console.log('归档成功, id:', data.id);
     showSync('☁️ 已归档');
+    await autoAddToTodo();
+  }
+}
+
+// ── AUTO ADD TO TODO ──
+function getScheduledDate(action, time) {
+  // Returns a Date object for the scheduled date, or null if should not add
+  var now = new Date();
+  var today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
+  if (action === '仅存档') return null;
+
+  // Skip if more than a week away
+  var skipKeywords = ['一周后', '下周', '两周', '本月底', '下个月'];
+  if (time && skipKeywords.some(function(k){ return time.indexOf(k) > -1; })) return null;
+
+  if (action === '立即做') return today;
+
+  if (action === '稍后做') {
+    // Today keywords
+    if (!time || ['今天上午','今天下午','今晚','今天'].some(function(k){ return time.indexOf(k) > -1; })) {
+      return today;
+    }
+    // Tomorrow keywords
+    if (['明天上午','明天下午','明天'].some(function(k){ return time.indexOf(k) > -1; })) {
+      var tomorrow = new Date(today); tomorrow.setDate(today.getDate() + 1);
+      return tomorrow;
+    }
+    // This week / weekend keywords → end of week (Sunday)
+    if (['本周内','本周末','周末','这周','本周'].some(function(k){ return time.indexOf(k) > -1; })) {
+      var daysToSun = 7 - today.getDay(); // days until next Sunday
+      if (daysToSun === 0) daysToSun = 7;
+      var sunday = new Date(today); sunday.setDate(today.getDate() + daysToSun);
+      return sunday;
+    }
+    // Custom datetime string
+    if (time && time.match(/\d{4}-\d{2}-\d{2}/)) {
+      var d = new Date(time);
+      var diffDays = (d - today) / (1000 * 60 * 60 * 24);
+      if (diffDays >= 0 && diffDays <= 7) return d;
+      return null;
+    }
+    // Fallback: today
+    return today;
+  }
+  return null;
+}
+
+async function autoAddToTodo() {
+  var scheduledDate = getScheduledDate(S.actionChoice, S.actionTime);
+  if (!scheduledDate) return;
+
+  var priority = S.actionChoice === '立即做' ? '高' : '中';
+  var todoText = S.eventText.slice(0, 35);
+
+  // Format date as YYYY-MM-DD for Supabase
+  var y = scheduledDate.getFullYear();
+  var m = String(scheduledDate.getMonth()+1).padStart(2,'0');
+  var d = String(scheduledDate.getDate()).padStart(2,'0');
+  var dateStr = y+'-'+m+'-'+d;
+
+  var res = await supa.from('todos').insert({
+    user_id: S.user.id,
+    text: todoText,
+    done: false,
+    priority: priority,
+    scheduled_date: dateStr
+  }).select().single();
+
+  if (!res.error && res.data) {
+    S.todos.push({
+      id: res.data.id,
+      text: res.data.text,
+      done: false,
+      pri: res.data.priority,
+      scheduledDate: dateStr
+    });
+    // Show toast
+    var toast = document.getElementById('todoAddedToast');
+    if (toast) {
+      toast.style.display = 'flex';
+      setTimeout(function(){ toast.style.display = 'none'; }, 3000);
+    }
+    console.log('已加入待办，日期：' + dateStr);
   }
 }
 
